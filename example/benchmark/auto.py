@@ -19,13 +19,23 @@ for i in range(len(file_List)):
 gcc_o = []
 gcc_S = []
 obj_d = []
+obj_t_data = []
+obj_t_bss = []
 for i in range(len(fileNameList)):
-    ordertemp = "gcc -o " + fileHeadList[i]+".out "+fileNameList[i]
+    ordertemp = "gcc " + fileNameList[i]+" -o "+fileHeadList[i]+".out"
     gcc_o.append(ordertemp)
+
     ordertemp = "gcc -S " + fileNameList[i]
     gcc_S.append(ordertemp)
+    
     ordertemp = "objdump -d " + fileHeadList[i] +".out > " + fileHeadList[i] + ".asm"
     obj_d.append(ordertemp)
+
+    ordertemp = "objdump -t " + fileHeadList[i] +".out | grep  \"\\.data\" > " + fileHeadList[i] + "_data.asm"
+    obj_t_data.append(ordertemp)
+
+    ordertemp = "objdump -t " + fileHeadList[i] +".out | grep  \"\\.bss\" > " + fileHeadList[i] + "_bss.asm"
+    obj_t_bss.append(ordertemp)
 
 
 
@@ -34,6 +44,8 @@ for i in range(len(fileHeadList)):
     os.system(gcc_o[i])
     os.system(gcc_S[i])
     os.system(obj_d[i])
+    os.system(obj_t_data[i])
+    os.system(obj_t_bss[i])
     #print(gcc_o[i])
     #print(gcc_S[i])
     #print(obj_d[i])
