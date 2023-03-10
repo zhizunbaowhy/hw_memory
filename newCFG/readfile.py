@@ -191,4 +191,3 @@ class ASMFileReader:
         return [o[1] for o in self.__stat_tokens if o[0] == StatementType.Symbol]
 
 
-test = ASMFileReader("/Users/gugujixiao/workspace/project/HWMemory/Code/HW-Memory/example/nginx/nginx.asm")
