@@ -16,15 +16,16 @@ class StatementType(Enum):
 class ReString:
     
     # 指令识别的第一行是地址+指令，往后是每一行都是一位操作数，如果不存在操作数，就会匹配成None
-    instruction_pat = r"\s*([0-9a-fA-F]{6}):\s*([0-9a-fA-F]{8})\s*([\w\.]*)" \
+    re_operator = r"([0-9a-fA-F]*\s*<.*>|(?:x|w)\d*|\[.*\]!?|\#0x[0-9a-fA-F]*|\#\d*|sp)?"
+    instruction_pat = r"\s*([0-9a-fA-F]*):\s*([0-9a-fA-F]*)\s*([\w\.]*)" \
                     r"(?:\s*)?"\
-                    r"([0-9a-fA-F]{6}\s*<.*>|(?:x|w)\d*|\[.*\]!?|\#0x[0-9a-fA-F]*|\#\d*|sp)?" \
+                    r"([0-9a-fA-F]*\s*<.*>|(?:x|w)\d*|\[.*\]!?|\#0x[0-9a-fA-F]*|\#\d*|sp)?" \
                     r"(?:\,\s*)?"\
-                    r"([0-9a-fA-F]{6}\s*<.*>|(?:x|w)\d*|\[.*\]!?|\#0x[0-9a-fA-F]*|\#\d*|sp)?" \
+                    r"([0-9a-fA-F]*\s*<.*>|(?:x|w)\d*|\[.*\]!?|\#0x[0-9a-fA-F]*|\#\d*|sp)?" \
                     r"(?:\,\s*)?"\
-                    r"([0-9a-fA-F]{6}\s*<.*>|(?:x|w)\d*|\[.*\]!?|\#0x[0-9a-fA-F]*|\#\d*|sp)?" \
+                    r"([0-9a-fA-F]*\s*<.*>|(?:x|w)\d*|\[.*\]!?|\#0x[0-9a-fA-F]*|\#\d*|sp)?" \
                     r"(?:\,\s*)?"\
-                    r"([0-9a-fA-F]{6}\s*<.*>|(?:x|w)\d*|\[.*\]!?|\#0x[0-9a-fA-F]*|\#\d*|sp)?" 
+                    r"([0-9a-fA-F]*\s*<.*>|(?:x|w)\d*|\[.*\]!?|\#0x[0-9a-fA-F]*|\#\d*|sp)?" 
     symbol_pat = r"([0-9a-fA-F]{16})\s*(?:<(.*)>)"
     section_pat = r"Disassembly\s*of\s*section\s*(\.\s*\w*)"
 
@@ -71,8 +72,9 @@ class ASMFileReader:
             self.__build_symbol_table()
             #print(self.__symbol_tabl)
             #print(self.__stat_tokens)
-            for i in self.__stat_tokens:
-                print(i)
+            #for i in self.__symbol_tabl:
+            #    if(i[0][1] == "main"):
+            #        print(i)
     
 
     def __build_section_table(self):
@@ -189,4 +191,4 @@ class ASMFileReader:
         return [o[1] for o in self.__stat_tokens if o[0] == StatementType.Symbol]
 
 
-test = ASMFileReader("/Users/gugujixiao/workspace/project/HWMemory/Code/newCFG/example/asmFile/all.asm")
+test = ASMFileReader("/Users/gugujixiao/workspace/project/HWMemory/Code/HW-Memory/example/nginx/nginx.asm")
