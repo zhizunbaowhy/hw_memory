@@ -22,7 +22,7 @@ class ReString:
 
     #特殊类型的匹配关系
     addr_adrp_pat = r"([0-9a-fA-F]*)\s"#匹配adrp的具体地址
-    addr_sp_pat = r"sp|\[sp\]|\[sp\s*\,\s*\#(?:-)?[0-9a-fA-F]*hua shu]!?"
+    addr_sp_pat = r"sp|\[sp\]|\[sp\s*\,\s*\#(?:-)?[0-9a-fA-F]*]!?"
 
     
 
@@ -52,11 +52,12 @@ class LoadStore:
         self.__fileObj = fileObj
         self.__tokens = fileObj.statements
         self.__tokens_len = len(self.__tokens)
+        self.__state_table = fileObj.statements_table
         self.__load_table = None
         self.__store_table = None
     
 
-    def test_func(self) -> list[str,bool]:
+    def test_func(self):
         entries = list()
         
         stat_idx= 0
@@ -126,36 +127,66 @@ class LoadStore:
         i = 1
 
 
-    def findAddress(self,head,end,stat_details):
-        find_idx ,find_end = head,end
-        while find_idx < find_end:
-            find_idx += 1
+    def addr_find_range(self,startline,endline,targetline):
+        
+        #因为是从后往前找，所以需要反一下
+        find_idx = endline 
+        find_end = startline
+        
+        res = [None,False]
+        target_stat = self.__state_table[targetline][1]
+        target_operator_idx = 4
+        target_operator = target_stat[target_operator_idx]
+
+
+        while find_idx > find_end:
+
+            find_stat_detail = self.__state_table[find_idx][1]
+            find_stat_detail_operator = find_stat_detail[3]
+            is_adrp = re.match(self.__ins_adrp_cpat,find_stat_detail[2])
+            is_move = re.match(self.__ins_move_cpat,find_stat_detail[2])
+            
+            if is_adrp:
+                if find_stat_detail_operator == target_operator:
+                    res = self.addr_proc_adrp(find_stat_detail)
+            elif is_move:
+                if find_stat_detail_operator == target_operator:
+                    res = self.addr_proc_move(find_stat_detail)
+
+            if res[1]:
+                break
+            
+            find_idx -= 1
+        
+        return res
+
+
+    def addr_proc_move(self,stat_details) -> list[str,bool]:
+        ins_statment = stat_details
+        temp_addr = None
+        is_final_addr = False
+        
+        is_addr_sp = re.match(self.__addr_sp_cpat,ins_statment[4])
+        if is_addr_sp:
+            temp_addr = is_addr_sp.group()
+            is_final_addr = True
+        else:
+            temp_addr = ins_statment[4]
+            is_final_addr = False
+
+        return [temp_addr,is_final_addr]
     
-
-    def processAddress(self,stat_details) ->list[str,bool]:
-
+    def addr_proc_adrp(self,stat_details) -> list[str,bool]:
         ins_statment = stat_details
         temp_addr = None
         is_final_addr = False
 
-        is_adrp = re.match(self.__ins_adrp_cpat,ins_statment[2])
-        is_move = re.match(self.__ins_move_cpat,ins_statment[2])
+        is_addr_adrp = re.match(self.__addr_adrp_cpat,ins_statment[4])
+        temp_addr = is_addr_adrp.group()
+        is_final_addr = True
 
-        if is_adrp:
-            is_addr_adrp = re.match(self.__addr_adrp_cpat,ins_statment[4])
-            temp_addr = is_addr_adrp.group()
-            is_final_addr = True
-        
-        if is_move:
-            is_addr_sp = re.match(self.__addr_sp_cpat,ins_statment[4])
-            if is_addr_sp:
-                temp_addr = is_addr_sp.group()
-                is_final_addr = True
-            else:
-                temp_addr = ins_statment[4]
-                is_final_addr = False
-                
         return [temp_addr,is_final_addr]
+        
     
 
 
