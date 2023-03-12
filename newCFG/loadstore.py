@@ -57,7 +57,7 @@ class LoadStore:
 
         #fileObj = ASMFileReader("/Users/gugujixiao/workspace/project/HWMemory/Code/HW-Memory/example/old_example/func.asm")
         self.__fileObj = fileObj
-        self.__tokens = fileObj.statements
+        self.__tokens = self.__fileObj.statements
         self.__tokens_len = len(self.__tokens)
         self.__state_table = fileObj.statements_table
         self.__load_table = None
@@ -95,6 +95,7 @@ class LoadStore:
         if self.__block_store_table == None:
             self.__build_block_store_table()
         return self.__block_store_table
+
 
     def __build_load_table(self):
         self.__load_table = self.__find_ins(self.__ins_load_cpat)
@@ -160,58 +161,64 @@ class LoadStore:
         find_idx = endline 
         find_end = startline
         
-        res = [None,False]
+        res = [None,False,None]
         target_stat_details = self.__state_table[targetline][1]
         target_operator_idx = self.__stat_operator_which_idx(target_stat_details)
         target_operator = target_stat_details[target_operator_idx]
-        print(target_stat_details)
         print(target_operator)
+        is_bracket = re.match(self.__operator_bracket_cpat,target_operator)
+        if is_bracket:
+            res = [None,True,"bracketAddr"]
+        else:
+            while find_idx > find_end:
 
-        while find_idx > find_end:
+                find_stat_detail = self.__state_table[find_idx][1]
+                find_stat_detail_operator = find_stat_detail[3]
 
-            find_stat_detail = self.__state_table[find_idx][1]
-            find_stat_detail_operator = find_stat_detail[3]
+                is_adrp = re.match(self.__ins_adrp_cpat,find_stat_detail[2])
+                is_move = re.match(self.__ins_move_cpat,find_stat_detail[2])
+                
+                if find_stat_detail_operator == target_operator:
+                    if is_adrp:
+                        res = self.__addr_proc_adrp(find_stat_detail)
+                    elif is_move:
+                        res = self.__addr_proc_move(find_stat_detail)
 
-            is_adrp = re.match(self.__ins_adrp_cpat,find_stat_detail[2])
-            is_move = re.match(self.__ins_move_cpat,find_stat_detail[2])
-            
-            if find_stat_detail_operator == target_operator:
-                if is_adrp:
-                    res = self.__addr_proc_adrp(find_stat_detail)
-                elif is_move:
-                    res = self.__addr_proc_move(find_stat_detail)
-
-            if res[1]:
-                break
-            
-            find_idx -= 1
+                if res[1]:
+                    break
+                
+                find_idx -= 1
         return res
 
-    def __addr_proc_move(self,stat_details) -> list[str,bool]:
+    def __addr_proc_move(self,stat_details) -> list[str,bool,str]:
         ins_statment = stat_details
         temp_addr = None
         is_final_addr = False
+        addr_type = None
         
         is_addr_sp = re.match(self.__addr_sp_cpat,ins_statment[4])
         if is_addr_sp:
             temp_addr = is_addr_sp.group()
             is_final_addr = True
+            addr_type = "local"
         else:
             temp_addr = ins_statment[4]
             is_final_addr = False
 
-        return [temp_addr,is_final_addr]
+        return [temp_addr,is_final_addr,addr_type]
     
-    def __addr_proc_adrp(self,stat_details) -> list[str,bool]:
+    def __addr_proc_adrp(self,stat_details) -> list[str,bool,str]:
         ins_statment = stat_details
         temp_addr = None
         is_final_addr = False
+        addr_type = None
 
         is_addr_adrp = re.match(self.__addr_adrp_cpat,ins_statment[4])
         temp_addr = is_addr_adrp.group()
+        addr_type = "global"
         is_final_addr = True
 
-        return [temp_addr,is_final_addr]
+        return [temp_addr,is_final_addr,addr_type]
         
 
 
