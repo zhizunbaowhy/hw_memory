@@ -9,6 +9,9 @@ class ReString:
     ins_adrp_pat = r"adrp"
     ins_move_pat = r"mov"
 
+    ins_ldp_pat = r"ldp"
+    ins_stp_pat = r"stp"
+
     #判断操作数属于什么类型用的
     #特殊类型的操作数
     operator_adrpAddr_pat = r"[0-9a-fA-F]*\s*<.*>"
@@ -33,6 +36,10 @@ class LoadStore:
     __ins_store_cpat = re.compile(ReString.ins_store_pat)
     __ins_adrp_cpat = re.compile(ReString.ins_adrp_pat)
     __ins_move_cpat = re.compile(ReString.ins_move_pat)
+
+    __ins_ldp_cpat = re.compile(ReString.ins_ldp_pat)
+    __ins_stp_cpat = re.compile(ReString.ins_stp_pat)
+
 
     #operator
     __operator_adrpAddr_cpat = re.compile(ReString.operator_adrpAddr_pat)
@@ -127,8 +134,25 @@ class LoadStore:
         pass
 
 
-    def backtrace(self):
+    def __addr_backtrace(self):
         i = 1
+
+    def __stat_operator_which_idx(self,stat_details):
+        
+        target_idx = 4
+        target_stat_details = stat_details
+        target_stat_details_ins = stat_details[2]
+
+        is_ldp = re.match(self.__ins_ldp_cpat,target_stat_details_ins)
+        is_stp = re.match(self.__ins_stp_cpat,target_stat_details_ins)
+
+        if is_ldp:
+            target_idx = 5
+        elif is_stp:
+            target_idx = 5
+        
+        return target_idx
+
 
     def __addr_find_range(self,startline,endline,targetline):
         
@@ -137,10 +161,11 @@ class LoadStore:
         find_end = startline
         
         res = [None,False]
-        target_stat = self.__state_table[targetline][1]
-        # TODO(GuGuJi):对于idx根据指令决定具体去多少
-        target_operator_idx = 4
-        target_operator = target_stat[target_operator_idx]
+        target_stat_details = self.__state_table[targetline][1]
+        target_operator_idx = self.__stat_operator_which_idx(target_stat_details)
+        target_operator = target_stat_details[target_operator_idx]
+        print(target_stat_details)
+        print(target_operator)
 
         while find_idx > find_end:
 
@@ -188,7 +213,6 @@ class LoadStore:
 
         return [temp_addr,is_final_addr]
         
-    
 
 
     
