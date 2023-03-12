@@ -42,11 +42,13 @@ class ASMFileReader:
         self.__fp = file_path
            
         self.__stat_tokens = tuple()#Tuple(Tuple（tokens append进来的玩意）(StatementType, Tuple(groups返回的)(Optional(str), ...)))
+        self.__stat_tabl = None
         self.__symbol_tabl = None#形如(('00000000004004d0', '_init'), 2, 7)，其中第一个是信息，第二个是在__stat_tokens的顺序，第三个是symbol的大小
         self.__section_tabl = None#形如(('.init',), 1, 8)，意义同上
         
         with open(file_path, 'rt', encoding='utf-8') as f:
             tokens = list()
+            stat_idx = 0
             for stat in f.readlines():
                 if len(stat.strip()) == 0:
                     continue    
@@ -57,6 +59,7 @@ class ASMFileReader:
 
                 ty = [is_instruction is not None, is_symbol is not None, is_section is not None]
 
+                stat_idx += 1
                 if is_instruction:
                     tokens.append((StatementType.Instruction, is_instruction.groups()))
                 elif is_symbol:
@@ -68,14 +71,67 @@ class ASMFileReader:
             
             
             self.__build_section_table()
-            #print(self.__section_tabl)
             self.__build_symbol_table()
+            #print(self.__section_tabl)
             #print(self.__symbol_tabl)
             #print(self.__stat_tokens)
             #for i in self.__symbol_tabl:
             #    if(i[0][1] == "main"):
             #        print(i)
     
+    @property
+    def file_path(self):
+        return self.__fp
+
+    @property
+    def statements(self):
+        return self.__stat_tokens
+    
+    @property
+    def instructions(self):
+        return [o[1] for o in self.__stat_tokens if o[0] == StatementType.Instruction]
+
+    @property
+    def sections(self):
+        return [o[1] for o in self.__stat_tokens if o[0] == StatementType.Section]
+
+    @property
+    def symbols(self):
+        return [o[1] for o in self.__stat_tokens if o[0] == StatementType.Symbol]
+    
+    @property
+    def statements_table(self):
+        if self.__stat_tabl is None:
+            self.__build_statment_table()
+        return self.__stat_tabl
+    
+    @property
+    def section_table(self) -> Tuple[tuple, int, int]:
+        if self.__section_tabl is None:
+            self.__build_section_table()
+        return self.__section_tabl
+
+    @property
+    def symbol_table(self) -> Tuple[tuple, int, int]:
+        if self.__symbol_tabl is None:
+            self.__build_symbol_table()
+        return self.__symbol_tabl
+    
+
+    def __build_statment_table(self):
+        entries = list()
+        
+        stat_idx= 0
+        stat_sum = len(self.__stat_tokens)
+
+        while stat_idx < stat_sum:
+            stat_type,stat_details = self.__stat_tokens[stat_idx]
+
+            stat_idx += 1
+            
+            entries.append((stat_type,stat_details,stat_idx))    
+        
+        self.__stat_tabl = tuple(entries)
 
     def __build_section_table(self):
         
@@ -158,36 +214,10 @@ class ASMFileReader:
         
         self.__symbol_tabl = tuple(entries)
 
-    @property
-    def file_path(self):
-        return self.__fp
 
-    @property
-    def statements(self):
-        return self.__stat_tokens
     
-    @property
-    def section_table(self) -> Tuple[tuple, int, int]:
-        if self.__section_tabl is None:
-            self.__build_section_table()
-        return self.__section_tabl
 
-    @property
-    def symbol_table(self) -> Tuple[tuple, int, int]:
-        if self.__symbol_tabl is None:
-            self.__build_symbol_table()
-        return self.__symbol_tabl
     
-    @property
-    def instructions(self):
-        return [o[1] for o in self.__stat_tokens if o[0] == StatementType.Instruction]
 
-    @property
-    def sections(self):
-        return [o[1] for o in self.__stat_tokens if o[0] == StatementType.Section]
-
-    @property
-    def symbols(self):
-        return [o[1] for o in self.__stat_tokens if o[0] == StatementType.Symbol]
 
 
