@@ -1,18 +1,15 @@
 from readfile import ASMFileReader
 from loadstore import LoadStore
 
+
+#测试readfile
 testfileobj = ASMFileReader("/Users/gugujixiao/workspace/project/HWMemory/Code/HW-Memory/example/old_example/func.asm")
-tempString = testfileobj.statements_table
 
-for i in tempString:
-    print(i)
 
+
+#测试loadstore
 testls = LoadStore(testfileobj)
 
-#temp = testls.test_func()
-#for i in temp:
-#    print(i)
+res = testls.test_func()
 
-#temp2 = testls.processAddress(temp[0][2])
-
-#print(temp2)
+print(res)

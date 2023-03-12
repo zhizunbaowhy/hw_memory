@@ -55,28 +55,13 @@ class LoadStore:
         self.__state_table = fileObj.statements_table
         self.__load_table = None
         self.__store_table = None
+        self.__block_load_table = None
+        self.__block_store_table = None
     
 
     def test_func(self):
-        entries = list()
-        
-        stat_idx= 0
-        stat_sum = self.__tokens_len
-        
-        while stat_idx < stat_sum:
-            stat_type,stat_details = self.__tokens[stat_idx]
-            stat_len = 0
-            for i in stat_details:
-                if i == None:
-                    break
-                stat_len += 1
-            if stat_type == StatementType.Instruction:
-                is_target = re.match(self.__ins_move_cpat,stat_details[2])
-                if is_target:
-                    entries.append((stat_type, stat_len,stat_details))
-            stat_idx += 1
-            
-        return entries
+        temp = self.__addr_find_range(2,6,6)
+        return temp
     
     
     @property
@@ -90,7 +75,19 @@ class LoadStore:
         if self.__store_table == None:
             self.__build_store_table()
         return self.__store_table
+    
 
+    @property
+    def block_load_table(self):
+        if self.__block_load_table == None:
+            self.__build_block_load_table()
+        return self.__block_load_table
+    
+    @property
+    def block_store_table(self):
+        if self.__block_store_table == None:
+            self.__build_block_store_table()
+        return self.__block_store_table
 
     def __build_load_table(self):
         self.__load_table = self.__find_ins(self.__ins_load_cpat)
@@ -115,19 +112,25 @@ class LoadStore:
                     break
                 stat_len += 1
             if stat_type == StatementType.Instruction:
-                is_loadIns = re.match(re_pat,stat_details[2])
-                if is_loadIns:
+                is_ins = re.match(re_pat,stat_details[2])
+                if is_ins:
                     entries.append((stat_type, stat_len,stat_details))
             stat_idx += 1
             
         return entries
     
 
+    def __build_block_load_table(self):
+        pass
+
+    def __build_block_store_table(self):
+        pass
+
+
     def backtrace(self):
         i = 1
 
-
-    def addr_find_range(self,startline,endline,targetline):
+    def __addr_find_range(self,startline,endline,targetline):
         
         #因为是从后往前找，所以需要反一下
         find_idx = endline 
@@ -135,33 +138,31 @@ class LoadStore:
         
         res = [None,False]
         target_stat = self.__state_table[targetline][1]
+        # TODO(GuGuJi):对于idx根据指令决定具体去多少
         target_operator_idx = 4
         target_operator = target_stat[target_operator_idx]
-
 
         while find_idx > find_end:
 
             find_stat_detail = self.__state_table[find_idx][1]
             find_stat_detail_operator = find_stat_detail[3]
+
             is_adrp = re.match(self.__ins_adrp_cpat,find_stat_detail[2])
             is_move = re.match(self.__ins_move_cpat,find_stat_detail[2])
             
-            if is_adrp:
-                if find_stat_detail_operator == target_operator:
-                    res = self.addr_proc_adrp(find_stat_detail)
-            elif is_move:
-                if find_stat_detail_operator == target_operator:
-                    res = self.addr_proc_move(find_stat_detail)
+            if find_stat_detail_operator == target_operator:
+                if is_adrp:
+                    res = self.__addr_proc_adrp(find_stat_detail)
+                elif is_move:
+                    res = self.__addr_proc_move(find_stat_detail)
 
             if res[1]:
                 break
             
             find_idx -= 1
-        
         return res
 
-
-    def addr_proc_move(self,stat_details) -> list[str,bool]:
+    def __addr_proc_move(self,stat_details) -> list[str,bool]:
         ins_statment = stat_details
         temp_addr = None
         is_final_addr = False
@@ -176,7 +177,7 @@ class LoadStore:
 
         return [temp_addr,is_final_addr]
     
-    def addr_proc_adrp(self,stat_details) -> list[str,bool]:
+    def __addr_proc_adrp(self,stat_details) -> list[str,bool]:
         ins_statment = stat_details
         temp_addr = None
         is_final_addr = False

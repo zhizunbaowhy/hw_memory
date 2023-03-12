@@ -1,32 +1,8 @@
-import re
+find_idx = 0 
+find_end = 12
+find_stat = ""
+while find_idx < find_end:
+    res = find_idx
+    find_idx += 1
 
-'''
-\s*([0-9a-fA-F]{6}):\s*([0-9a-fA-F]{8})\s*([\w\.]*)$没寄存器
-\s*([0-9a-fA-F]{6}):\s*([0-9a-fA-F]{8})\s*([\w\.]*)\s*([0-9a-fA-F]{6}\s*<.*>)$没寄存器带地址
-\s*([0-9a-fA-F]{6}):\s*([0-9a-fA-F]{8})\s*([\w\.]*)\s*(x\d*)$一位寄存器
-\s*([0-9a-fA-F]{6}):\s*([0-9a-fA-F]{8})\s*([\w\.]*)\s*(x\d*)\s*\,\s*(\[.*\]!*)$一位寄存器带[]
-\s*([0-9a-fA-F]{6}):\s*([0-9a-fA-F]{8})\s*([\w\.]*)\s*(x\d*)\s*\,\s*#(0x\d*)$一位寄存器带偏移
-\s*([0-9a-fA-F]{6}):\s*([0-9a-fA-F]{8})\s*([\w\.]*)\s*(x\d*)\s*\,\s*(\[.*\]!*)$一位寄存器带地址
-\s*([0-9a-fA-F]{6}):\s*([0-9a-fA-F]{8})\s*([\w\.]*)\s*(x\d*)\s*\,\s*(x\d*)$两位寄存器
-\s*([0-9a-fA-F]{6}):\s*([0-9a-fA-F]{8})\s*([\w\.]*)\s*(x\d*)\s*\,\s*(x\d*)\,\s*#(0x\d*)$两位寄存器带偏移
-\s*([0-9a-fA-F]{6}):\s*([0-9a-fA-F]{8})\s*(.*)(?:$|\s*(x\d*|\[.*\]|\#0x\d*)(?:$|\,\s*(x\d*|\[.*\]|\#0x\d*))(?:$|\,\s*(x\d*|\[.*\]|\#0x\d*)))
-"
-'''
-
-string = r"(123)" \
-#         r"(?:\s*)?(111){0,1}"
-
-
-
-
-pattern = re.compile(string)
-
-m = pattern.match("123 112")
-print(m.groups())
-
-token = list()
-token.append((1,2,3,4,5))
-token.append((1,2,3,4,5))
-token.append((1,2,3,4,5))
-token.append((1,2,3,4,5))
-print(token)
+print(res)
