@@ -3,9 +3,9 @@ Disassembly of section .init:
 0000000000400498 <_init>:
   400498:       d503201f        nop
   40049c:       a9bf7bfd        stp     x29, x30, [sp, #-16]!
-  4004a0:       910003fd        mov     x29, sp
+  4004a0:       910003fd        mov     x29, [sp, #-16]!
   4004a4:       94000028        bl      400544 <call_weak_fn>
-  4004a8:       a8c17bfd        ldp     x29, x30, [sp], #16
+  4004a8:       a8c17bfd        ldr     x19, [sp, #-16]!
   4004ac:       d65f03c0        ret
 
 Disassembly of section .plt:
