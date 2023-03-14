@@ -11,6 +11,7 @@ class cfg_gen:
     def draw_cfg(self):
 
         dot = Digraph('single_block')
+        
         for i in range(len(self.isa.head)):
             if self.isa.is_loop(i):
                 self.isa.order[i] += ' and loop'  # 如果order中含有loop我们就loop数加一

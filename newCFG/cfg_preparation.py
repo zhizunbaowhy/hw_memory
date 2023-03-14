@@ -50,19 +50,28 @@ class singel_CFGEdge:
 
 
 class CFGNode_and_edge:
-    def __init__(self,fileobj):
+
+    def __init__(self,fileobj:ASMFileReader):
         self.nodechart=[]  #这个就是最后的结果，里面有所有的CFGNode以及它的基本信息
         self.nodechart_show=[]
         self.edgechart = [] #这个就是最后的结果，里面有所有的CFGEdge以及它的基本信息
         self.edgechart_show=[]
         #这些是用来辅助cfg构建的，最后的结果都在上面的nodechart和edgechart里面
-        self.testfileobj = fileobj
-        self.reader=self.testfileobj
+        self.reader=fileobj
         self.head=[]
         self.tail=[]
         self.order=[]
+        
+        #外部需要的数据
+        self.__blockHead = None
 
         self.CFGNode_and_edge_gen()
+
+    @property
+    def blockhead(self):
+        if self.__blockHead is None:
+            self.__build_bolckHead()
+        return self.__blockHead
 
     def CFGNode_and_edge_gen(self):
         main_line=0
@@ -122,6 +131,8 @@ class CFGNode_and_edge:
                     self.tail.append(self.reader.statements[edge[i + 1]][1][0])
                     self.order.append('')
         self.OOP_gen()
+        print(self.head)
+        print(self.tail)
 
     def bl_func(self,name:str) ->str:
         start,end = self.find_name(name)
@@ -240,7 +251,28 @@ class CFGNode_and_edge:
                 return False
         return result
     
-    
+    def __build_bolckHead(self):
+        self.__blockHead = sorted(list(set(self.head + self.tail)))
+
+    def build_cfgInfo_table(self):
+
+        if self.__blockHead is None:
+            self.__build_bolckHead()
+
+        statments_table = self.reader.statements_table
+
+
+        for blk_hd in self.__blockHead:
+            print(blk_hd)
+            for stat in statments_table:
+                stat_dtl = stat[1]
+                stat_idx = stat[2]
+                if stat_dtl[0] == blk_hd:
+                    print(stat)
+                    print(stat_dtl)
+                    print(stat_idx)
+
+
     def is_loop(self,i):#这里判断的逻辑是如果是向地址小的划线的话就是一个loop
         if self.hexStr2Number(self.head[i])>self.hexStr2Number(self.tail[i]):
             return True
