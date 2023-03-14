@@ -2,10 +2,11 @@ import graphviz
 from graphviz import Digraph
 
 from cfg_preparation  import CFGNode_and_edge
+from readfile import ASMFileReader,StatementType
 
 class CFG:
-    def __init__(self,filename:str):
-        self.isa=CFGNode_and_edge(filename)
+    def __init__(self,fileobj):
+        self.isa=CFGNode_and_edge(fileobj)
     def CFG_gen(self):
         self.isa.CFGNode_and_edge_gen()
         dot = Digraph('single_block')
@@ -22,5 +23,3 @@ class CFG:
 
 
 
-a=CFG(r"/Users/gugujixiao/workspace/project/HWMemory/Code/HW-Memory/example/old_example/func.asm")
-a.CFG_gen()

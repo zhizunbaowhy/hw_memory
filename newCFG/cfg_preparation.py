@@ -50,13 +50,14 @@ class singel_CFGEdge:
 
 
 class CFGNode_and_edge:
-    def __init__(self,filepath:str):
+    def __init__(self,fileobj):
         self.nodechart=[]  #这个就是最后的结果，里面有所有的CFGNode以及它的基本信息
         self.nodechart_show=[]
         self.edgechart = [] #这个就是最后的结果，里面有所有的CFGEdge以及它的基本信息
         self.edgechart_show=[]
         #这些是用来辅助cfg构建的，最后的结果都在上面的nodechart和edgechart里面
-        self.reader=ASMFileReader(filepath)
+        self.testfileobj = fileobj
+        self.reader=self.testfileobj
         self.head=[]
         self.tail=[]
         self.order=[]

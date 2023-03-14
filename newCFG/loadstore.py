@@ -217,7 +217,7 @@ class LoadStore:
                 find_idx -= 1
         return res
 
-    def __addr_proc_move(self,stat_details) -> list[str,bool,str]:
+    def __addr_proc_move(self,stat_details):
         ins_statment = stat_details
         temp_addr = None
         is_final_addr = False
@@ -235,7 +235,7 @@ class LoadStore:
 
         return [temp_addr,is_final_addr,addr_type]
     
-    def __addr_proc_adrp(self,stat_details) -> list[str,bool,str]:
+    def __addr_proc_adrp(self,stat_details):
         ins_statment = stat_details
         temp_addr = None
         is_final_addr = False
