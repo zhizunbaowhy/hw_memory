@@ -1,3 +1,4 @@
+#做测试用的代码
 from readfile import ASMFileReader
 from loadstore import LoadStore
 from cfg_gen import cfg_gen
@@ -7,12 +8,8 @@ from cfg_preparation import CFGNode_and_edge
 testFileObj = ASMFileReader("/Users/gugujixiao/workspace/project/HWMemory/Code/HW-Memory/example/old_example/func.asm")
 
 #测试CFG
-testCFG_pre = CFGNode_and_edge(testFileObj)
-testCFG = cfg_gen(testCFG_pre)
-
-
-
-
+testCFGPre = CFGNode_and_edge(testFileObj)
+testCFGGen = cfg_gen(testCFGPre)
 
 #测试loadstore
 testls = LoadStore(testFileObj)

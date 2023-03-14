@@ -10,7 +10,6 @@ class cfg_gen:
     
     def draw_cfg(self):
 
-        self.isa.CFGNode_and_edge_gen()
         dot = Digraph('single_block')
         for i in range(len(self.isa.head)):
             if self.isa.is_loop(i):

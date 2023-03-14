@@ -1,3 +1,5 @@
+#做实验用的代码
+
 find_idx = 0 
 find_end = 12
 find_stat = ""

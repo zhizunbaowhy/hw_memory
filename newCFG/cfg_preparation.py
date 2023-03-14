@@ -62,6 +62,8 @@ class CFGNode_and_edge:
         self.tail=[]
         self.order=[]
 
+        self.CFGNode_and_edge_gen()
+
     def CFGNode_and_edge_gen(self):
         main_line=0
         main_length=0
@@ -189,7 +191,7 @@ class CFGNode_and_edge:
             self.edgechart.append(singel_CFGEdge(self.head[i],self.tail[i],self.order[i]))
         for i in range(len(self.edgechart)):
             self.edgechart_show.append([self.edgechart[i].src]+[self.edgechart[i].dst]+[self.edgechart[i].order])
-        print(self.edgechart_show)
+        #print(self.edgechart_show)
         temp=list(set(self.head+self.tail))
         for i in range(len(temp)):
             in_temp=[]
@@ -200,8 +202,8 @@ class CFGNode_and_edge:
                 if self.edgechart[j].src==temp[i]:
                     out_temp.append(self.edgechart_show[i])
             self.nodechart.append(single_CFGNode(temp[i],in_temp,out_temp))
-        for i in self.nodechart:
-            print(i.id,'in_edges',i.in_edges,'out_edges',i.out_edges)
+        #for i in self.nodechart:
+        #    print(i.id,'in_edges',i.in_edges,'out_edges',i.out_edges)
 
 
     def hexStr2Number(self,strParam):#十六进制字符串转化为十进制数
