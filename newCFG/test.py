@@ -1,21 +1,21 @@
 from readfile import ASMFileReader
 from loadstore import LoadStore
-from CFG import CFG
-
+from cfg_gen import cfg_gen
+from cfg_preparation import CFGNode_and_edge
 
 #测试readfile
-testfileobj = ASMFileReader("/Users/gugujixiao/workspace/project/HWMemory/Code/HW-Memory/example/old_example/func.asm")
+testFileObj = ASMFileReader("/Users/gugujixiao/workspace/project/HWMemory/Code/HW-Memory/example/old_example/func.asm")
 
 #测试CFG
-testCFG = CFG(testfileobj)
-testCFG.CFG_gen()
+testCFG_pre = CFGNode_and_edge(testFileObj)
+testCFG = cfg_gen(testCFG_pre)
 
 
 
 
 
 #测试loadstore
-testls = LoadStore(testfileobj)
+testls = LoadStore(testFileObj)
 
 #res = testls.test_func(5)
 
