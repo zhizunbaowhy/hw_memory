@@ -4,11 +4,12 @@ from readfile import ASMFileReader,StatementType
 class ReString:
 
     #判断指令用的
-    ins_load_pat = r"ldr|ldp"
-    ins_store_pat = r"str|stp"
+    #一类指令
+    ins_load_pat = r"ldr|ldp|lda|ldu"
+    ins_store_pat = r"str|stp|stl|stu"
     ins_adrp_pat = r"adrp"
     ins_move_pat = r"mov"
-
+    #具体指令
     ins_ldp_pat = r"ldp"
     ins_stp_pat = r"stp"
 
@@ -66,9 +67,16 @@ class LoadStore:
         self.__block_store_table = None
     
 
-    def test_func(self):
-        temp = self.__addr_find_range(2,6,6)
-        return temp
+    def test_func(self,target_id):
+        target = target_id
+        res = ""
+        for i in self.__state_table:
+            if i[2] == target:
+                print(i)
+                res = i[1]
+
+        num = self.instr_operator_num(res)
+        return num
     
     
     @property
@@ -138,9 +146,8 @@ class LoadStore:
     def __addr_backtrace(self):
         i = 1
 
-    def __stat_operator_which_idx(self,stat_details):
+    def __loadstore_operator_which_idx(self,stat_details):
         
-        target_idx = 4
         target_stat_details = stat_details
         target_stat_details_ins = stat_details[2]
 
@@ -151,8 +158,20 @@ class LoadStore:
             target_idx = 5
         elif is_stp:
             target_idx = 5
-        
+        else:
+            target_idx = 4
         return target_idx
+
+    def instr_operator_num(self,stat_details):
+        target_stat_details = stat_details
+        if target_stat_details[3] == None:
+            return 0
+        elif  target_stat_details[4] == None:
+            return 1
+        elif  target_stat_details[5] == None:
+            return 2
+        elif  target_stat_details[6] == None:
+            return 3
 
 
     def __addr_find_range(self,startline,endline,targetline):
@@ -160,15 +179,23 @@ class LoadStore:
         #因为是从后往前找，所以需要反一下
         find_idx = endline 
         find_end = startline
-        
-        res = [None,False,None]
+        res = [None,False,"don't know"]
+
+
         target_stat_details = self.__state_table[targetline][1]
-        target_operator_idx = self.__stat_operator_which_idx(target_stat_details)
+        target_operator_idx = self.__loadstore_operator_which_idx(target_stat_details)
         target_operator = target_stat_details[target_operator_idx]
-        print(target_operator)
+
+        is_offset = re.match(self.__operator_offset_cpat,target_operator)
         is_bracket = re.match(self.__operator_bracket_cpat,target_operator)
+
+        #说明是立即数
+        if is_offset:
+            res = [target_operator,True,"offset"]
+        #有括号，说明是寄存器间接寻址或者寄存器变址寻址
         if is_bracket:
             res = [None,True,"bracketAddr"]
+        #剩下的应该算是寄存器寻址
         else:
             while find_idx > find_end:
 
@@ -197,6 +224,7 @@ class LoadStore:
         addr_type = None
         
         is_addr_sp = re.match(self.__addr_sp_cpat,ins_statment[4])
+        
         if is_addr_sp:
             temp_addr = is_addr_sp.group()
             is_final_addr = True

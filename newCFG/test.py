@@ -10,6 +10,6 @@ testfileobj = ASMFileReader("/Users/gugujixiao/workspace/project/HWMemory/Code/H
 #测试loadstore
 testls = LoadStore(testfileobj)
 
-res = testls.test_func()
+res = testls.test_func(5)
 
 print(res)
