@@ -283,8 +283,8 @@ class CFGNode_and_edge:
             self.__build_bolck_head() 
         if self.__block_info is None:
             self.__build_block_info()
-        if self.__block_table is None:
-            self.build_block_table()
+        if len(self.__block_table) == 0:
+            self.__build_block_table()
         
         return self.__block_table
     
@@ -312,21 +312,20 @@ class CFGNode_and_edge:
             
             self.__block_info[blk_hd] = block_htl
     
-    def build_block_table(self):
+    def __build_block_table(self):
+        
         self.block_info["400604"][1] = 115
         self.block_info["400620"][1] = 117
         self.block_info["400628"][1] = 118
         self.block_info["40062c"][1] = 120
         self.block_info["400634"][1] = 127
         self.block_info["40064c"][1] = 130
+
         
         for k,v in self.block_info.items():
-            self.build_singleBlock_table(v)
-
-        for i in self.block_table:
-            print(i)
+            self.__build_singleBlock_table(v)
         
-    def build_singleBlock_table(self,singleBlock_info):
+    def __build_singleBlock_table(self,singleBlock_info):
         block_headLine = singleBlock_info[0]
         head_idx = block_headLine
         block_tailLine = singleBlock_info[1]
@@ -336,7 +335,7 @@ class CFGNode_and_edge:
         while head_idx <= block_tailLine:
             stat_dtl = statments_table[head_idx - 1]
             head_idx += 1
-            self.block_table.append((block_headAddr,stat_dtl[1],stat_dtl[2]))
+            self.__block_table.append((block_headAddr,stat_dtl[1],stat_dtl[2]))
 
         
 
