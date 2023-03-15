@@ -311,8 +311,6 @@ class CFGNode_and_edge:
                         block_htl[0] = stat_idx
             
             self.__block_info[blk_hd] = block_htl
-    
-    def __build_block_table(self):
         
         self.block_info["400604"][1] = 115
         self.block_info["400620"][1] = 117
@@ -320,6 +318,10 @@ class CFGNode_and_edge:
         self.block_info["40062c"][1] = 120
         self.block_info["400634"][1] = 127
         self.block_info["40064c"][1] = 130
+    
+    def __build_block_table(self):
+        
+        
 
         
         for k,v in self.block_info.items():
