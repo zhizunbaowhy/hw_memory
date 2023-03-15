@@ -6,10 +6,16 @@ from cfg_preparation import CFGNode_and_edge
 
 #测试readfile
 testFileObj = ASMFileReader("/Users/gugujixiao/workspace/project/HWMemory/Code/HW-Memory/example/old_example/func.asm")
+stat_line =testFileObj.statements_table
+
+#for i in stat_line:
+#    print(i)
 
 #测试CFG
 testCFGPre = CFGNode_and_edge(testFileObj)
-testCFGGen = cfg_gen(testCFGPre)
+testBlockInfo = testCFGPre.block_info
+testCFGPre.build_block_table()
+
 
 #测试loadstore
 testls = LoadStore(testFileObj)
