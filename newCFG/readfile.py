@@ -119,6 +119,11 @@ class ASMFileReader:
             self.__build_symbol_table()
         return self.__symbol_tabl
     
+    def find_addr(self,addr):
+        for i in self.__stat_tabl:
+            if addr == i[1][0]:
+                print(i)
+                print(i[2])
 
     def __build_statment_table(self):
         entries = list()
