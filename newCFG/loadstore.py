@@ -54,29 +54,26 @@ class LoadStore:
     __addr_sp_cpat = re.compile(ReString.addr_sp_pat)
     
     
-    def __init__(self,fileObj):
+    def __init__(self,fileObj,cfgObj):
 
-        #fileObj = ASMFileReader("/Users/gugujixiao/workspace/project/HWMemory/Code/HW-Memory/example/old_example/func.asm")
+        #读文件的结果
         self.__fileObj = fileObj
         self.__tokens = self.__fileObj.statements
         self.__tokens_len = len(self.__tokens)
         self.__state_table = fileObj.statements_table
+        #cfg建立之后得到的信息
+        self.__cfgObj = cfgObj
+        self.__block_info = self.__cfgObj.block_info
+        #自己用到的或者是生成的
         self.__load_table = None
         self.__store_table = None
-        self.__block_load_table = None
-        self.__block_store_table = None
+        self.__block_load_table = []
+        self.__block_store_table = []
     
 
-    def test_func(self,target_id):
-        target = target_id
-        res = ""
-        for i in self.__state_table:
-            if i[2] == target:
-                print(i)
-                res = i[1]
-
-        num = self.instr_operator_num(res)
-        return num
+    def test_func(self):
+        for i in self.__block_info.items():
+            print(i)
     
     
     @property
@@ -94,15 +91,17 @@ class LoadStore:
 
     @property
     def block_load_table(self):
-        if self.__block_load_table == None:
+        if len(self.__block_load_table) == 0:
             self.__build_block_load_table()
         return self.__block_load_table
     
     @property
     def block_store_table(self):
-        if self.__block_store_table == None:
+        if len(self.__block_store_table) == 0:
             self.__build_block_store_table()
         return self.__block_store_table
+
+
 
 
     def __build_load_table(self):
@@ -112,35 +111,55 @@ class LoadStore:
     def __build_store_table(self):
         self.__store_table = self.__find_ins(self.__ins_store_cpat)
     
+    
+    def __build_block_load_table(self):
+        entries = list()
+        for k,v in self.__block_info.items():
+            res = self.__find_ins_range(v[0],v[1],self.__ins_load_cpat)
+            for i in res:
+                entries.append((k,i))
+        self.__block_load_table = entries
+            
+
+
+    def __build_block_store_table(self):
+        entries = list()
+        for k,v in self.__block_info.items():
+            res = self.__find_ins_range(v[0],v[1],self.__ins_store_cpat)
+            for i in res:
+                entries.append((k,i))
+        self.__block_store_table = entries
 
     def __find_ins(self,re_pat):
         
         entries = list()
         
-        stat_idx= 0
+        stat_idx= 1
         stat_sum = self.__tokens_len
+
+        entries = self.__find_ins_range(stat_idx,stat_sum,re_pat)
+            
+        return entries
+    
+    
+    def __find_ins_range(self,head,end,re_pat):
+        entries = list()
+        
+        stat_idx= head - 1
+        stat_sum = end
         
         while stat_idx < stat_sum:
-            stat_type,stat_details = self.__tokens[stat_idx]
-            stat_len = 0
-            for i in stat_details:
-                if i == None:
-                    break
-                stat_len += 1
+            stat_type,stat_details,stat_line = self.__state_table[stat_idx]
             if stat_type == StatementType.Instruction:
                 is_ins = re.match(re_pat,stat_details[2])
                 if is_ins:
-                    entries.append((stat_type, stat_len,stat_details))
+                    entries.append((stat_type,stat_details,stat_line))
             stat_idx += 1
             
         return entries
     
 
-    def __build_block_load_table(self):
-        pass
 
-    def __build_block_store_table(self):
-        pass
 
 
     def __addr_backtrace(self):
