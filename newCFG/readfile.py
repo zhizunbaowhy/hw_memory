@@ -120,10 +120,11 @@ class ASMFileReader:
         return self.__symbol_tabl
     
     def find_addr(self,addr):
+        stat_dtl = None
         for i in self.__stat_tabl:
             if addr == i[1][0]:
-                print(i)
-                print(i[2])
+                stat_dtl = i
+        return stat_dtl
 
     def __build_statment_table(self):
         entries = list()
