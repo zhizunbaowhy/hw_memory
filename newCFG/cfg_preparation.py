@@ -1,5 +1,5 @@
 #from enum import Enum, Flag, auto
-from readfile import ASMFileReader
+from readfile import ASMFileReader, StatementType
 #from typing import List
 
 
@@ -52,6 +52,7 @@ class singel_CFGEdge:
 class CFGNode_and_edge:
 
     def __init__(self,fileobj:ASMFileReader):
+
         self.nodechart=[]  #这个就是最后的结果，里面有所有的CFGNode以及它的基本信息
         self.nodechart_show=[]
         self.edgechart = [] #这个就是最后的结果，里面有所有的CFGEdge以及它的基本信息
@@ -63,15 +64,10 @@ class CFGNode_and_edge:
         self.order=[]
         
         #外部需要的数据
-        self.__blockHead = None
-
-        self.CFGNode_and_edge_gen()
-
-    @property
-    def blockhead(self):
-        if self.__blockHead is None:
-            self.__build_bolckHead()
-        return self.__blockHead
+        self.__cfg_not_prepar = True
+        self.__block_head = None
+        self.__block_info = None
+        self.__block_table = list()
 
     def CFGNode_and_edge_gen(self):
         main_line=0
@@ -131,8 +127,9 @@ class CFGNode_and_edge:
                     self.tail.append(self.reader.statements[edge[i + 1]][1][0])
                     self.order.append('')
         self.OOP_gen()
-        print(self.head)
-        print(self.tail)
+
+        #说明执行过了
+        self.__cfg_not_prepar = False
 
     def bl_func(self,name:str) ->str:
         start,end = self.find_name(name)
@@ -216,6 +213,11 @@ class CFGNode_and_edge:
         #for i in self.nodechart:
         #    print(i.id,'in_edges',i.in_edges,'out_edges',i.out_edges)
 
+    def is_loop(self,i):#这里判断的逻辑是如果是向地址小的划线的话就是一个loop
+        if self.hexStr2Number(self.head[i])>self.hexStr2Number(self.tail[i]):
+            return True
+        else:
+            return False
 
     def hexStr2Number(self,strParam):#十六进制字符串转化为十进制数
         if strParam == '' or strParam is None:
@@ -250,31 +252,95 @@ class CFGNode_and_edge:
             else:
                 return False
         return result
+
+
+    #对于外部需要的函数的处理
+    @property
+    def block_head(self):
+        if self.__cfg_not_prepar:
+            self.CFGNode_and_edge_gen()
+        if self.__block_head is None:
+            self.__build_bolck_head()
+        
+        return self.__block_head
+
+    @property
+    def block_info(self):
+        if self.__cfg_not_prepar:
+            self.CFGNode_and_edge_gen()
+        if self.__block_head is None:
+            self.__build_bolck_head() 
+        if self.__block_info is None:
+            self.__build_block_info()
+        
+        return self.__block_info
     
-    def __build_bolckHead(self):
-        self.__blockHead = sorted(list(set(self.head + self.tail)))
+    @property
+    def block_table(self):
+        if self.__cfg_not_prepar:
+            self.CFGNode_and_edge_gen()
+        if self.__block_head is None:
+            self.__build_bolck_head() 
+        if self.__block_info is None:
+            self.__build_block_info()
+        if self.__block_table is None:
+            self.build_block_table()
+        
+        return self.__block_table
+    
 
-    def build_cfgInfo_table(self):
+    def __build_bolck_head(self):
+        self.__block_head = sorted(list(set(self.head + self.tail)))
 
-        if self.__blockHead is None:
-            self.__build_bolckHead()
+    def __build_block_info(self):
+
+        self.__block_info = {}
 
         statments_table = self.reader.statements_table
 
+        for blk_hd in self.__block_head:
 
-        for blk_hd in self.__blockHead:
-            print(blk_hd)
+            block_htl = ["头的行数","尾的行数"]
+            
             for stat in statments_table:
+                stat_type = stat[0]
                 stat_dtl = stat[1]
                 stat_idx = stat[2]
-                if stat_dtl[0] == blk_hd:
-                    print(stat)
-                    print(stat_dtl)
-                    print(stat_idx)
+                if stat_type == StatementType.Instruction:
+                    if stat_dtl[0] == blk_hd:
+                        block_htl[0] = stat_idx
+            
+            self.__block_info[blk_hd] = block_htl
+    
+    def build_block_table(self):
+        self.block_info["400604"][1] = 115
+        self.block_info["400620"][1] = 117
+        self.block_info["400628"][1] = 118
+        self.block_info["40062c"][1] = 120
+        self.block_info["400634"][1] = 127
+        self.block_info["40064c"][1] = 130
+        
+        for k,v in self.block_info.items():
+            self.build_singleBlock_table(v)
+
+        for i in self.block_table:
+            print(i)
+        
+    def build_singleBlock_table(self,singleBlock_info):
+        block_headLine = singleBlock_info[0]
+        head_idx = block_headLine
+        block_tailLine = singleBlock_info[1]
+        statments_table = self.reader.statements_table
+        block_headAddr = statments_table[block_headLine-1][1][0]
+
+        while head_idx <= block_tailLine:
+            stat_dtl = statments_table[head_idx - 1]
+            head_idx += 1
+            self.block_table.append((block_headAddr,stat_dtl[1],stat_dtl[2]))
+
+        
 
 
-    def is_loop(self,i):#这里判断的逻辑是如果是向地址小的划线的话就是一个loop
-        if self.hexStr2Number(self.head[i])>self.hexStr2Number(self.tail[i]):
-            return True
-        else:
-            return False
+
+
+    
