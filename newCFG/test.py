@@ -7,19 +7,19 @@ from cfg_preparation import CFGNode_and_edge
 #测试readfile
 testFileObj = ASMFileReader("/Users/gugujixiao/workspace/project/HWMemory/Code/HW-Memory/example/old_example/func.asm")
 stat_line =testFileObj.statements_table
-
+stat_dtl = testFileObj.find_addr('400608')
 #for i in stat_line:
 #    print(i)
 
 #测试CFG
-testCFGPre = CFGNode_and_edge(testFileObj)
-testBlockInfo = testCFGPre.block_info
-testCFGPre.build_block_table()
-
+testCFGObj = CFGNode_and_edge(testFileObj)
+testCFGObj.CFGNode_and_edge_gen()
+testCFGObj.build_dfs()
 
 #测试loadstore
-testls = LoadStore(testFileObj)
+testls = LoadStore(testFileObj,testCFGObj)
 
-#res = testls.test_func(5)
+'''res = testls.block_store_table
+for i in res:
+    print(i)'''
 
-#print(res)
