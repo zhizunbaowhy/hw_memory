@@ -320,10 +320,7 @@ class CFGNode_and_edge:
         self.block_info["40064c"][1] = 130
     
     def __build_block_table(self):
-        
-        
 
-        
         for k,v in self.block_info.items():
             self.__build_singleBlock_table(v)
         
@@ -339,7 +336,6 @@ class CFGNode_and_edge:
             head_idx += 1
             self.__block_table.append((block_headAddr,stat_dtl[1],stat_dtl[2]))
 
-        
 
 
 
