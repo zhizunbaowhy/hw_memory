@@ -86,10 +86,10 @@ class CFGNode_and_edge:
             address.append(self.reader.statements[i][1][0])
         edge.append(main_line)
         for i in range(main_line,main_line+main_length):
-            if  self.reader.statements[i][1][2][0] == 'b':
+            if self.reader.statements[i][1][2][0] == 'b':
                 edge.append(i + 1)
-                if self.reader.statements[i][1][3][0:6] in address:
-                    edge.append(address.index(self.reader.statements[i][1][3][0:6]))
+                if self.reader.statements[i][1][3].split()[0] in address:
+                    edge.append(main_line+address.index(self.reader.statements[i][1][3].split()[0]))
         edge = sorted(set(edge))  # 排序去重
         #print(edge)
         # # 按照指令集查找分块
@@ -102,7 +102,7 @@ class CFGNode_and_edge:
                 elif self.reader.statements[int(edge[i + 1]) - 1][1][2][0:2] == 'b.':  #符合这种跳转的，需要画两条线
                     #两条线三个节点，先实例化并加入点集。
                     self.head.append(self.reader.statements[edge[i]][1][0])
-                    self.tail.append(self.reader.statements[int(edge[i + 1])-1][1][3][0:6])
+                    self.tail.append(self.reader.statements[int(edge[i + 1])-1][1][3].split()[0])
                     self.order.append(self.reader.statements[int(edge[i + 1]) - 1][1][2][2:4])
 
                     self.head.append(self.reader.statements[edge[i]][1][0])
@@ -110,22 +110,27 @@ class CFGNode_and_edge:
                     self.order.append('')
                 elif self.reader.statements[int(edge[i + 1]) - 1][1][2][0:3] == 'bc.':  # 符合这种跳转的，需要画两条线
                     self.head.append(self.reader.statements[edge[i]][1][0])
-                    self.tail.append(self.reader.statements[int(edge[i + 1]) - 1][1][3][0:6])
+                    self.tail.append(self.reader.statements[int(edge[i + 1]) - 1][1][3].split()[0])
                     self.order.append(self.reader.statements[int(edge[i + 1]) - 1][1][2][3:5])
                     self.head.append(self.reader.statements[edge[i]][1][0])
                     self.tail.append(self.reader.statements[edge[i + 1]][1][0])
                     self.order.append('')
                 elif self.reader.statements[int(edge[i + 1]) - 1][1][2] == 'b':
                     self.head.append(self.reader.statements[edge[i]][1][0])
-                    self.tail.append(self.reader.statements[int(edge[i + 1]) - 1][1][3][0:6])
+                    self.tail.append(self.reader.statements[int(edge[i + 1]) - 1][1][3].split()[0])
                     self.order.append('b')
-                elif self.reader.statements[int(edge[i + 1]) - 1][1][2] == 'bl':
+                elif self.reader.statements[int(edge[i + 1]) - 1][1][2] == 'bl' and self.reader.statements[int(edge[i + 1]) - 1][1][3][-5:-1] != '@plt':
                     self.head.append(self.reader.statements[edge[i]][1][0])
-                    self.tail.append(self.reader.statements[int(edge[i + 1]) - 1][1][3][0:6])
+                    self.tail.append(self.reader.statements[int(edge[i + 1]) - 1][1][3].split()[0])
                     self.order.append('bl')
-                    self.head.append(self.bl_func(self.reader.statements[int(edge[i + 1]) - 1][1][3][8:-1]))
+                    self.head.append(self.bl_func(self.reader.statements[int(edge[i + 1]) - 1][1][3].split()[1][1:-1]))
                     self.tail.append(self.reader.statements[edge[i + 1]][1][0])
                     self.order.append('')
+                elif self.reader.statements[int(edge[i + 1]) - 1][1][2] == 'bl' and self.reader.statements[int(edge[i + 1]) - 1][1][3][-5:-1] == '@plt':
+                    self.head.append(self.reader.statements[edge[i]][1][0])
+                    self.tail.append(self.reader.statements[int(edge[i + 1]) - 1][1][3].split()[0])
+                    self.order.append('@plt')
+
         self.OOP_gen()
 
         #说明执行过了
@@ -138,7 +143,7 @@ class CFGNode_and_edge:
         #print(self.reader.statements[126][1][3][8:-1])
         for i in range(start,end,1):
             if self.reader.statements[i][1][2][0:2]== 'bl':
-                temp.append([self.reader.statements[i][1][0]]+[self.reader.statements[i][1][2]]+[self.reader.statements[i][1][3][0:6]]+[self.reader.statements[i][1][3][8:-1]])
+                temp.append([self.reader.statements[i][1][0]]+[self.reader.statements[i][1][2]]+[self.reader.statements[i][1][3].split()[0]]+[self.reader.statements[i][1][3].split()[1][1:-1]])
                 # 第一个是地址，第二个是命令，第三个是跳到的地址，第四个是跳转的函数名称
             else:
                 temp.append([self.reader.statements[i][1][0]]+[self.reader.statements[i][1][2]]+[self.reader.statements[i][1][3]])
@@ -146,12 +151,15 @@ class CFGNode_and_edge:
         edge = []
         address = []
         edge.append(start)
+        #print(address)
         for i in range(len(temp)):
             address.append(temp[i][0])
         for i in range(len(temp)):
             if temp[i][1][0] == 'b':
                 edge.append(start+i+1)
-                edge.append(start+address.index(temp[i][2][0:6]))#可能出错
+                #print(temp[i][2])
+                if temp[i][2].split()[0] in address:
+                   edge.append(start+address.index(temp[i][2].split()[0]))#可能出错
         edge = sorted(set(edge))
         #print(edge)
         for i in range(len(edge)):
@@ -163,7 +171,7 @@ class CFGNode_and_edge:
                 elif self.reader.statements[int(edge[i + 1]) - 1][1][2][0:2] == 'b.':  #符合这种跳转的，需要画两条线
                     #两条线三个节点，先实例化并加入点集。
                     self.head.append(self.reader.statements[edge[i]][1][0])
-                    self.tail.append(self.reader.statements[int(edge[i + 1])-1][1][3][0:6])
+                    self.tail.append(self.reader.statements[int(edge[i + 1])-1][1][3].split()[0])
                     self.order.append(self.reader.statements[int(edge[i + 1]) - 1][1][2][2:4])
 
                     self.head.append(self.reader.statements[edge[i]][1][0])
@@ -171,30 +179,38 @@ class CFGNode_and_edge:
                     self.order.append('')
                 elif self.reader.statements[int(edge[i + 1]) - 1][1][2][0:3] == 'bc.':  # 符合这种跳转的，需要画两条线
                     self.head.append(self.reader.statements[edge[i]][1][0])
-                    self.tail.append(self.reader.statements[int(edge[i + 1]) - 1][1][3][0:6])
+                    self.tail.append(self.reader.statements[int(edge[i + 1]) - 1][1][3].split()[0])
                     self.order.append(self.reader.statements[int(edge[i + 1]) - 1][1][2][3:5])
                     self.head.append(self.reader.statements[edge[i]][1][0])
                     self.tail.append(self.reader.statements[edge[i + 1]][1][0])
                     self.order.append('')
                 elif self.reader.statements[int(edge[i + 1]) - 1][1][2] == 'b':
                     self.head.append(self.reader.statements[edge[i]][1][0])
-                    self.tail.append(self.reader.statements[int(edge[i + 1]) - 1][1][3][0:6])
+                    self.tail.append(self.reader.statements[int(edge[i + 1]) - 1][1][3].split()[0])
                     self.order.append('b')
-                elif self.reader.statements[int(edge[i + 1]) - 1][1][2] == 'bl':
+                elif self.reader.statements[int(edge[i + 1]) - 1][1][2] == 'bl' and self.reader.statements[int(edge[i + 1]) - 1][1][3][-5:-1] != '@plt':
                     self.head.append(self.reader.statements[edge[i]][1][0])
-                    self.tail.append(self.reader.statements[int(edge[i + 1]) - 1][1][3][0:6])
+                    self.tail.append(self.reader.statements[int(edge[i + 1]) - 1][1][3].split()[0])
                     self.order.append('bl')
-                    self.head.append(self.bl_func(self.reader.statements[int(edge[i + 1]) - 1][1][3][8:-1]))
+                    self.head.append(self.bl_func(self.reader.statements[int(edge[i + 1]) - 1][1][3].split()[1][1:-1]))
                     self.tail.append(self.reader.statements[edge[i + 1]][1][0])
                     self.order.append('')
+                elif self.reader.statements[int(edge[i + 1]) - 1][1][2] == 'bl' and self.reader.statements[int(edge[i + 1]) - 1][1][3][-5:-1] == '@plt':
+                    self.head.append(self.reader.statements[edge[i]][1][0])
+                    self.tail.append(self.reader.statements[int(edge[i + 1]) - 1][1][3].split()[0])
+                    self.order.append('@plt')
         return self.reader.statements[int(edge[len(edge) - 1])][1][0]
 
     def find_name(self, name:str):  # 找寻函数名字并且返回首尾的行
+        # print('找',name)
         for i in range(len(self.reader.symbol_table)):
             if self.reader.symbol_table[i][0][1]==name:
                 return self.reader.symbol_table[i][1],self.reader.symbol_table[i][1]+self.reader.symbol_table[i][2]
 
     def OOP_gen(self):
+        print(self.head)
+        print(self.tail)
+        print(self.order)
         for i in range(len(self.head)):
             self.edgechart.append(singel_CFGEdge(self.head[i],self.tail[i],self.order[i]))
         for i in range(len(self.edgechart)):
@@ -206,9 +222,9 @@ class CFGNode_and_edge:
             out_temp=[]
             for j in range(len(self.edgechart)):
                 if self.edgechart[j].dst==temp[i]:
-                    in_temp.append(self.edgechart_show[i])
-                if self.edgechart[j].src==temp[i]:
-                    out_temp.append(self.edgechart_show[i])
+                    in_temp.append(self.edgechart_show[j])
+                elif self.edgechart[j].src==temp[i]:
+                    out_temp.append(self.edgechart_show[j])
             self.nodechart.append(single_CFGNode(temp[i],in_temp,out_temp))
         #for i in self.nodechart:
         #    print(i.id,'in_edges',i.in_edges,'out_edges',i.out_edges)
@@ -320,7 +336,10 @@ class CFGNode_and_edge:
         self.block_info["40064c"][1] = 130
     
     def __build_block_table(self):
+        
+        
 
+        
         for k,v in self.block_info.items():
             self.__build_singleBlock_table(v)
         
@@ -336,6 +355,7 @@ class CFGNode_and_edge:
             head_idx += 1
             self.__block_table.append((block_headAddr,stat_dtl[1],stat_dtl[2]))
 
+        
 
 
 
