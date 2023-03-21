@@ -22,6 +22,12 @@ class ReString:
     operator_sp_pat = r"sp"
     #带括号的
     operator_bracket_pat = r"\[.*\]!?"
+    operator_bracket_sp_pat = r"\[[\s\S]*sp[\s\S]*\]!?"
+    operator_bracket_simpleReg_pat = r"\[((?:x|w)\d*)\]!?"
+    operator_bracket_regOffset_pat = r"\[((?:x|w)\d*)\s*\,\s*\#((?:\d*|0x[0-9a-fA-F]*))\]!?"
+    operator_bracket_regdotreg_pat = r"\[((?:x|w)\d*)\s*\,\s*((?:x|w)\d*)\]!?"
+    operator_bracket_regplusreg_pat = r"\[((?:x|w)\d*)\s*\+\s*((?:x|w)\d*)\]!?"
+
 
 
     #特殊类型的匹配关系
@@ -47,7 +53,15 @@ class LoadStore:
     __operator_generalReg_cpat = re.compile(ReString.operator_generalReg_pat)
     __operator_offset_cpat = re.compile(ReString.operator_offset_pat)
     __operator_sp_cpat = re.compile(ReString.operator_sp_pat)
+
     __operator_bracket_cpat = re.compile(ReString.operator_bracket_pat)
+    __operator_bracket_sp_cpat = re.compile(ReString.operator_bracket_sp_pat)
+    __operator_bracket_simpleReg_cpat = re.compile(ReString.operator_bracket_simpleReg_pat)
+    __operator_bracket_regOffset_cpat = re.compile(ReString.operator_bracket_regOffset_pat)
+    __operator_bracket_regdotreg_cpat = re.compile(ReString.operator_bracket_regdotreg_pat)
+    __operator_bracket_regplusreg_cpat = re.compile(ReString.operator_bracket_regplusreg_pat)
+    
+
     
     #special
     __addr_adrp_cpat = re.compile(ReString.addr_adrp_pat)
@@ -102,8 +116,6 @@ class LoadStore:
         return self.__block_store_table
 
 
-
-
     def __build_load_table(self):
         self.__load_table = self.__find_ins(self.__ins_load_cpat)
 
@@ -121,7 +133,6 @@ class LoadStore:
         self.__block_load_table = entries
             
 
-
     def __build_block_store_table(self):
         entries = list()
         for k,v in self.__block_info.items():
@@ -129,6 +140,7 @@ class LoadStore:
             for i in res:
                 entries.append((k,i))
         self.__block_store_table = entries
+
 
     def __find_ins(self,re_pat):
         
@@ -140,7 +152,6 @@ class LoadStore:
         entries = self.__find_ins_range(stat_idx,stat_sum,re_pat)
             
         return entries
-    
     
     def __find_ins_range(self,head,end,re_pat):
         entries = list()
@@ -165,7 +176,8 @@ class LoadStore:
     def __addr_backtrace(self):
         i = 1
 
-    def __loadstore_operator_which_idx(self,stat_details):
+    def __is_ldpstp(self,stat_details):
+        is_lsp = False
         
         target_stat_details = stat_details
         target_stat_details_ins = stat_details[2]
@@ -174,98 +186,190 @@ class LoadStore:
         is_stp = re.match(self.__ins_stp_cpat,target_stat_details_ins)
 
         if is_ldp:
-            target_idx = 5
+            is_lsp = True
         elif is_stp:
-            target_idx = 5
-        else:
-            target_idx = 4
-        return target_idx
+            is_lsp = True
+        return is_lsp
 
     def instr_operator_num(self,stat_details):
         target_stat_details = stat_details
         if target_stat_details[3] == None:
-            return 0
-        elif  target_stat_details[4] == None:
-            return 1
-        elif  target_stat_details[5] == None:
             return 2
-        elif  target_stat_details[6] == None:
+        elif  target_stat_details[4] == None:
             return 3
+        elif  target_stat_details[5] == None:
+            return 4
+        elif  target_stat_details[6] == None:
+            return 5
 
 
-    def __addr_find_range(self,startline,endline,targetline):
+    def addr_find_range(self,startline,endline,targetline):
         
         #因为是从后往前找，所以需要反一下
-        find_idx = endline 
-        find_end = startline
-        res = [None,False,"don't know"]
+        find_idx = endline-1 
+        find_end = startline-1
+        res = [None,False,"not process yet"]
+        print(self.__state_table[find_idx][1])
+        print(self.__state_table[find_end][1])
+        print(self.__state_table[targetline-1][1])
 
+        #这里是在处理目标
+        target_stat_details = self.__state_table[targetline-1][1]
+        
+        target_stat_ins = target_stat_details[2]
+        is_lsp = self.__is_ldpstp(target_stat_details)
+        target_operator_num = self.instr_operator_num(target_stat_details)
+       
 
-        target_stat_details = self.__state_table[targetline][1]
-        target_operator_idx = self.__loadstore_operator_which_idx(target_stat_details)
-        target_operator = target_stat_details[target_operator_idx]
+        if target_operator_num == 4:
+            target_operator = target_stat_details[target_operator_num]
+            
+            
+            is_offset = re.match(self.__operator_offset_cpat,target_operator)
+            is_bracket = re.match(self.__operator_bracket_cpat,target_operator)
 
-        is_offset = re.match(self.__operator_offset_cpat,target_operator)
-        is_bracket = re.match(self.__operator_bracket_cpat,target_operator)
-
-        #说明是立即数
-        if is_offset:
-            res = [target_operator,True,"offset"]
-        #有括号，说明是寄存器间接寻址或者寄存器变址寻址
-        if is_bracket:
-            res = [None,True,"bracketAddr"]
-        #剩下的应该算是寄存器寻址
-        else:
-            while find_idx > find_end:
-
-                find_stat_detail = self.__state_table[find_idx][1]
-                find_stat_detail_operator = find_stat_detail[3]
-
-                is_adrp = re.match(self.__ins_adrp_cpat,find_stat_detail[2])
-                is_move = re.match(self.__ins_move_cpat,find_stat_detail[2])
+            #给了个立即数，挺少见的
+            if is_offset:
                 
-                if find_stat_detail_operator == target_operator:
-                    if is_adrp:
-                        res = self.__addr_proc_adrp(find_stat_detail)
-                    elif is_move:
-                        res = self.__addr_proc_move(find_stat_detail)
-
-                if res[1]:
-                    break
+                res = [{'addr': target_operator},True,"immediate Offset"]
+            #有括号，进入正常处理流程
+            if is_bracket:
                 
-                find_idx -= 1
+                #is_spbase,is_reg,is_regplus,is_regoffsetplus
+                print(target_operator)
+                is_sp = re.match(self.__operator_bracket_sp_cpat,target_operator)
+                if is_sp:
+                    
+                    res = [{'addr': target_operator},True,"sp register"]
+                    
+                else:
+                    
+                    is_bracket_simpleReg = re.match(self.__operator_bracket_simpleReg_cpat,target_operator)
+                    is_bracket_regOffset = re.match(self.__operator_bracket_regOffset_cpat,target_operator)
+                    is_bracket_regdotreg = re.match(self.__operator_bracket_regdotreg_cpat,target_operator)
+                    is_bracket_regplusreg = re.match(self.__operator_bracket_regplusreg_cpat,target_operator)
+
+                    if is_bracket_simpleReg:
+                        print("here0")
+                        temp = is_bracket_simpleReg.groups()
+                        addr_position = {}
+                        addr_position["reg"] = temp[0]
+                        res = [addr_position,False,"simpleReg"]
+                        print(res[0])
+                    elif is_bracket_regOffset:
+                        print("here1")
+                        temp = is_bracket_regOffset.groups()
+                        addr_position = {}
+                        addr_position["reg"] = temp[0]
+                        addr_position["offset"] = temp[1]
+                        res = [addr_position,False,"regOffset"]
+                        print(res[0])
+                    elif is_bracket_regdotreg:
+                        print("here2")
+                        res = [is_bracket_regdotreg.groups(),False,"regdotreg"]
+                        print(res[0])
+                    elif is_bracket_regplusreg:
+                        print("here3")
+                        res = [is_bracket_regplusreg.groups(),False,"regplusreg"]
+                        print(res[0])
+
+                    while find_idx > find_end:
+
+                        find_stat_detail = self.__state_table[find_idx][1]
+                        find_stat_detail_operator = find_stat_detail[3]
+
+                        target_operator_type = res[2]
+                        addr_position = res[0]
+
+                        is_adrp = re.match(self.__ins_adrp_cpat,find_stat_detail[2])
+                        is_move = re.match(self.__ins_move_cpat,find_stat_detail[2])
+
+
+                        if target_operator_type == "simpleReg":
+                            #print(target_operator_group[0])
+                            #print(find_stat_detail_operator)
+                            #print()
+                            if addr_position["reg"] == find_stat_detail_operator:
+                                if is_adrp:
+                                    res = self.__addr_proc_adrp(find_stat_detail,res)
+                                    print(res)
+                                elif is_move:
+                                    res = self.__addr_proc_move(find_stat_detail,res)
+                                    print(res)
+                        elif target_operator_type == "regOffset":
+                            if addr_position["reg"] == find_stat_detail_operator:
+                                if is_adrp:
+                                    res = self.__addr_proc_adrp(find_stat_detail,res)
+                                    print(res)
+                                elif is_move:
+                                    res = self.__addr_proc_move(find_stat_detail,res)
+                                    print(res)
+                        elif target_operator_type == "regdotreg":
+                            pass
+                        elif target_operator_type == "regplusreg":
+                            pass
+
+                        if res[1]:
+                            break
+                        
+                        find_idx -= 1
+        print(res)  
         return res
 
-    def __addr_proc_move(self,stat_details):
+    def __addr_pro_backtrace(self):
+        pass
+
+
+    def __addr_proc_move(self,stat_details,res):
         ins_statment = stat_details
+        addr_position = res[0]
         temp_addr = None
         is_final_addr = False
-        addr_type = None
+        addr_type = res[2]
         
         is_addr_sp = re.match(self.__addr_sp_cpat,ins_statment[4])
         
         if is_addr_sp:
-            temp_addr = is_addr_sp.group()
+            addr_position["reg"] = is_addr_sp.group()
             is_final_addr = True
-            addr_type = "local"
+            addr_type = "sp register"
         else:
-            temp_addr = ins_statment[4]
+            addr_position["reg"] = ins_statment[4]
             is_final_addr = False
 
-        return [temp_addr,is_final_addr,addr_type]
+        return [addr_position,is_final_addr,addr_type]
     
-    def __addr_proc_adrp(self,stat_details):
+    def __addr_proc_adrp(self,stat_details,res):
         ins_statment = stat_details
+        addr_position = res[0]
         temp_addr = None
-        is_final_addr = False
-        addr_type = None
 
+        addr_position_len = len(addr_position)
         is_addr_adrp = re.match(self.__addr_adrp_cpat,ins_statment[4])
         temp_addr = is_addr_adrp.group()
-        addr_type = "global"
-        is_final_addr = True
+        
 
-        return [temp_addr,is_final_addr,addr_type]
+        if "reg" in addr_position and "offset" not in addr_position:
+            temp_addr = int("0x"+temp_addr,16)
+            addr_position["addr"] = hex(temp_addr)
+            del addr_position["reg"]
+            res[0] = addr_position
+        elif "reg" in addr_position and "offset" in addr_position:
+            print("here12312321")
+            offset = addr_position["offset"]
+            if offset[0:2] == "0x":
+                offset = int(offset,16)
+            else:
+                offset = int(offset)
+            temp_addr = int("0x"+temp_addr,16)
+            temp_addr = temp_addr + offset
+            addr_position["addr"] = hex(temp_addr)
+            del addr_position["reg"]
+            del addr_position["offset"]
+
+
+        res[1] = True
+        return res
         
 
 
