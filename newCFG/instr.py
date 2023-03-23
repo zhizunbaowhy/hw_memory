@@ -1,6 +1,25 @@
 import re
 from enum import Enum, auto
+from readfile import StatementType
 from typing import Tuple, Optional
+
+class stat_collection:
+    def __init__(self,fileObj):
+        self.insObject = list()
+        stat_tuple = fileObj.statements_table
+
+        for i in stat_tuple:
+            stat_type = i[0]
+            stat_dtl = i[1]
+            stat_line = i[2]
+            if stat_type == StatementType.Section:
+                self.insObject.append((stat_type,Section(stat_dtl,stat_line)))
+            elif stat_type == StatementType.Symbol:
+                self.insObject.append((stat_type,Symbol(stat_dtl,stat_line)))
+            elif stat_type == StatementType.Instruction:
+                self.insObject.append((stat_type,Ins(stat_dtl,stat_line)))
+            
+
 
 # 标记语句类型用的枚举类
 class AddressMode(Enum):
@@ -33,7 +52,7 @@ class Re_Ins_Type:
     # 区分指令类型
     branch_pat = r"b|b.|bl|bc.|cbnz|cbz|tbnz|tbz|ret"\
                 r"|bx|blx|blr|br|brk|hlt"
-    branch_original_pat = r"b|b.|bl|bc."
+    branch_original_pat = r"(?:b$)|(?:b\.)|(?:bl$)|bc."
     branch_reg_pat = r"cbnz|cbz|tbnz|tbz"
 
     load_pat = r"ldr|ldp|lda|ldu" 
@@ -67,22 +86,25 @@ class RE_Operand_Type:
     ls_regBef_pat = r"\[((?:x|w)\d*)\s*\,\s*(-?)((?:x|w)\d*)\]!"
     ls_regShiftBef_pat = r"\[((?:x|w)\d*)\s*\,\s*(-?)((?:x|w)\d*)\s*\,\s*(LSL|LSR|ASR|ROR)\s*\#(-?)((?:\d*|0x[0-9a-fA-F]*))\]!"
 
+
+class Section:
+    def __init__(self,statment_dtl,line):
+        self.label = statment_dtl[0]
+        self.line = line
+
+
 class Symbol:
     __addr_nozero_cpat = re.compile(Re_Ins_Type.addr_nozero_pat)
 
 
     def __init__(self,statment_dtl,line):
         tempaddr = statment_dtl[0]
-        print(tempaddr)
         re_addr_nozero =re.match(self.__addr_nozero_cpat,tempaddr)
         tempaddr = re_addr_nozero.groups()
         self.addr_hex = tempaddr[1]
         self.addr = int(self.addr_hex,16)
         self.label = statment_dtl[1]
         self.line = line
-
-
-
 
 
 class Ins:
@@ -185,19 +207,15 @@ class Ins:
             self.__adrp_proc()
         elif re_move:
             self.type = InsType.MOV
-            print(self.is_move)
             self.__move_proc()
         else:
-            self.is_other = True
             self.type = InsType.OTHER
-    
+            self.is_handle = False
     
 
 
     def __branch_proc(self):
-        print(self.instr_operand_num)
         if self.operand_num == 0:
-            print("here")
             if self.ins == "ret":
                 self.branch_addr_hex = "return"
                 self.branch_addr = "return"
