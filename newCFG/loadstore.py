@@ -4,7 +4,7 @@ from readfile import ASMFileReader,StatementType
 class ReString:
 
     #判断指令用的
-    #一类指令
+    #指令大类
     ins_load_pat = r"ldr|ldp|lda|ldu"
     ins_store_pat = r"str|stp|stl|stu"
     ins_adrp_pat = r"adrp"
@@ -13,7 +13,7 @@ class ReString:
     ins_ldp_pat = r"ldp"
     ins_stp_pat = r"stp"
 
-    #判断操作数属于什么类型用的
+    #判断操作数属于什么类型
     #特殊类型的操作数
     operator_adrpAddr_pat = r"[0-9a-fA-F]*\s*<.*>"
     #独立匹配的
@@ -28,8 +28,6 @@ class ReString:
     operator_bracket_regdotreg_pat = r"\[((?:x|w)\d*)\s*\,\s*((?:x|w)\d*)\]!?"
     operator_bracket_regplusreg_pat = r"\[((?:x|w)\d*)\s*\+\s*((?:x|w)\d*)\]!?"
 
-
-
     #特殊类型的匹配关系
     addr_adrp_pat = r"([0-9a-fA-F]*)\s"#匹配adrp的具体地址
     addr_sp_pat = r"sp|\[sp\]|\[sp\s*\,\s*\#(?:-)?[0-9a-fA-F]*]!?"
@@ -38,31 +36,28 @@ class ReString:
 
 class LoadStore:
 
-    #ins
+    #指令
     __ins_load_cpat = re.compile(ReString.ins_load_pat)
     __ins_store_cpat = re.compile(ReString.ins_store_pat)
     __ins_adrp_cpat = re.compile(ReString.ins_adrp_pat)
     __ins_move_cpat = re.compile(ReString.ins_move_pat)
-
+    #特殊的ls指令
     __ins_ldp_cpat = re.compile(ReString.ins_ldp_pat)
     __ins_stp_cpat = re.compile(ReString.ins_stp_pat)
 
 
-    #operator
+    #操作数
     __operator_adrpAddr_cpat = re.compile(ReString.operator_adrpAddr_pat)
     __operator_generalReg_cpat = re.compile(ReString.operator_generalReg_pat)
     __operator_offset_cpat = re.compile(ReString.operator_offset_pat)
     __operator_sp_cpat = re.compile(ReString.operator_sp_pat)
-
+    #涉及方括号的操作数
     __operator_bracket_cpat = re.compile(ReString.operator_bracket_pat)
     __operator_bracket_sp_cpat = re.compile(ReString.operator_bracket_sp_pat)
     __operator_bracket_simpleReg_cpat = re.compile(ReString.operator_bracket_simpleReg_pat)
     __operator_bracket_regOffset_cpat = re.compile(ReString.operator_bracket_regOffset_pat)
     __operator_bracket_regdotreg_cpat = re.compile(ReString.operator_bracket_regdotreg_pat)
     __operator_bracket_regplusreg_cpat = re.compile(ReString.operator_bracket_regplusreg_pat)
-    
-
-    
     #special
     __addr_adrp_cpat = re.compile(ReString.addr_adrp_pat)
     __addr_sp_cpat = re.compile(ReString.addr_sp_pat)

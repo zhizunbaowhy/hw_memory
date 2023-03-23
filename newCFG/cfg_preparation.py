@@ -60,6 +60,9 @@ class CFGNode_and_edge:
         #这些是用来辅助cfg构建的，最后的结果都在上面的nodechart和edgechart里面
         self.reader=fileobj
         self.head=[]
+        self.headline = []
+        self.end=[]
+        self.endline = []
         self.tail=[]
         self.order=[]
         
@@ -208,9 +211,9 @@ class CFGNode_and_edge:
                 return self.reader.symbol_table[i][1],self.reader.symbol_table[i][1]+self.reader.symbol_table[i][2]
 
     def OOP_gen(self):
-        print(self.head)
-        print(self.tail)
-        print(self.order)
+        #print(self.head)
+        #print(self.tail)
+        #print(self.order)
         for i in range(len(self.head)):
             self.edgechart.append(singel_CFGEdge(self.head[i],self.tail[i],self.order[i]))
         for i in range(len(self.edgechart)):
@@ -327,13 +330,7 @@ class CFGNode_and_edge:
                         block_htl[0] = stat_idx
             
             self.__block_info[blk_hd] = block_htl
-        
-        self.block_info["400604"][1] = 115
-        self.block_info["400620"][1] = 117
-        self.block_info["400628"][1] = 118
-        self.block_info["40062c"][1] = 120
-        self.block_info["400634"][1] = 127
-        self.block_info["40064c"][1] = 130
+
     
     def __build_block_table(self):
         
@@ -354,6 +351,59 @@ class CFGNode_and_edge:
             stat_dtl = statments_table[head_idx - 1]
             head_idx += 1
             self.__block_table.append((block_headAddr,stat_dtl[1],stat_dtl[2]))
+
+    def build_endline(self):
+        for hd in self.head:
+            for st in self.reader.statements_table:
+                if hd == st[1][0]:
+                    temp = (hd,st[2])
+                    self.headline.append(temp)
+
+        for hdl in self.headline:
+            hdl_num = hdl[1]
+            idx = hdl_num - 1
+            
+            while idx < (len(self.reader.statements_table)-1):
+
+                laststat = self.reader.statements_table[idx]
+                lastline = laststat[2]
+                lastaddr = laststat[1][0]
+                idx += 1
+                nowstat = self.reader.statements_table[idx]
+                nowdtl = nowstat[1]
+                nowtype = nowstat[0]
+                nowline = nowstat[2]
+                nowaddr = nowstat[1][0]
+                
+                is_head = False
+                for i in self.head:
+                    if nowaddr == i:
+                        self.end.append(lastaddr)
+                        self.endline.append([lastaddr,lastline])
+                        is_head = True
+                if is_head:
+                    break
+                elif nowtype == StatementType.Section:
+                    self.end.append(lastaddr)
+                    self.endline.append([lastaddr,lastline])
+                    break
+                elif nowtype == StatementType.Symbol:
+                    self.end.append(lastaddr)
+                    self.endline.append([lastaddr,lastline])
+                    break
+                elif nowdtl[2][0] == 'b':
+                    self.end.append(nowaddr)
+                    self.endline.append([nowaddr,nowline])
+                    break
+                elif nowdtl[2] == "ret":
+                    self.end.append(nowaddr)
+                    self.endline.append([nowaddr,nowline])
+                    break
+
+
+            #print(hdl_num)
+            #print(self.reader.statements_table[hdl_num-1])
+
 
         
 

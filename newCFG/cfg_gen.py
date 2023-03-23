@@ -18,7 +18,7 @@ class cfg_gen:
                 self.isa.order[i] += ' loop'  # 如果order中含有loop我们就loop数加一
 
             dot.edge(self.isa.head[i], self.isa.tail[i], self.isa.order[i])
-        #dot.view()  # 画图
+        dot.view()  # 画图
 
     def gen_graph_shoot(self): #创建图，就是列表形式的图，比如[1,3]就是第一个点连接到第三个点,先抽象出一个图的数据结构
         sun_temp = self.isa.head + self.isa.tail
