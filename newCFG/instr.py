@@ -96,8 +96,6 @@ class isa:
     
     def __branch_proc(self):
         re_branch_addr = re.match(self.__operand_branch_access_cpat,self.dtl[3])
-        print(self.dtl[3])
-        print(re_branch_addr)
         temp = re_branch_addr.groups()
         self.branch_addr = temp[0]
         self.branch_label = temp[1]
@@ -105,8 +103,6 @@ class isa:
         pass
     def __adrp_proc(self):
         re_adrp_addr = re.match(self.__operand_adrp_access_cpat,self.dtl[4])
-        print(self.dtl[4])
-        print(re_adrp_addr)
         temp = re_adrp_addr.groups()
         self.adrp_addr = temp[0]
         self.adrp_label = temp[1]
