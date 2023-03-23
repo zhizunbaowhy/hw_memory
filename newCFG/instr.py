@@ -27,6 +27,9 @@ class InsType(Enum):
 
 class Re_Ins_Type:
     
+
+    #去除地址中的0
+    addr_nozero_pat = r"(0*)([1-9a-fA-F][0-9a-fA-F]*)"
     # 区分指令类型
     branch_pat = r"b|b.|bl|bc.|cbnz|cbz|tbnz|tbz|ret"\
                 r"|bx|blx|blr|br|brk|hlt"
@@ -64,8 +67,25 @@ class RE_Operand_Type:
     ls_regBef_pat = r"\[((?:x|w)\d*)\s*\,\s*(-?)((?:x|w)\d*)\]!"
     ls_regShiftBef_pat = r"\[((?:x|w)\d*)\s*\,\s*(-?)((?:x|w)\d*)\s*\,\s*(LSL|LSR|ASR|ROR)\s*\#(-?)((?:\d*|0x[0-9a-fA-F]*))\]!"
 
+class Symbol:
+    __addr_nozero_cpat = re.compile(Re_Ins_Type.addr_nozero_pat)
 
-class isa:
+
+    def __init__(self,statment_dtl,line):
+        tempaddr = statment_dtl[0]
+        print(tempaddr)
+        re_addr_nozero =re.match(self.__addr_nozero_cpat,tempaddr)
+        tempaddr = re_addr_nozero.groups()
+        self.addr_hex = tempaddr[1]
+        self.addr = int(self.addr_hex,16)
+        self.label = statment_dtl[1]
+        self.line = line
+
+
+
+
+
+class Ins:
     #编译指令
     __branch_cpat = re.compile(Re_Ins_Type.branch_pat)
     __branch_original_cpat = re.compile(Re_Ins_Type.branch_original_pat)
@@ -102,7 +122,8 @@ class isa:
     def __init__(self,statment_dtl,line):
 
         self.dtl = statment_dtl
-        self.addr = statment_dtl[0]
+        self.addr_hex = statment_dtl[0]
+        self.addr = int(self.addr_hex,16)
         self.opcode = statment_dtl[1]
         self.ins = statment_dtl[2]
         self.stat_line = line
@@ -111,6 +132,7 @@ class isa:
         self.type = None
         self.is_handle = False
 
+        self.branch_addr_hex = None
         self.branch_addr = None
         self.branch_label = None
         
@@ -119,6 +141,7 @@ class isa:
         self.ls_reg = None
         self.ls_addrMode = None
            
+        self.adrp_addr_hex = None
         self.adrp_addr = None
         self.adrp_label = None
         
@@ -176,6 +199,7 @@ class isa:
         if self.operand_num == 0:
             print("here")
             if self.ins == "ret":
+                self.branch_addr_hex = "return"
                 self.branch_addr = "return"
                 self.branch_label = "return"
                 self.is_handle = True
@@ -186,7 +210,8 @@ class isa:
             if re_branch_original:
                 re_branch_addr = re.match(self.__operand_branch_access_cpat,self.dtl[3])
                 temp = re_branch_addr.groups()
-                self.branch_addr = temp[0]
+                self.branch_addr_hex = temp[0]
+                self.branch_addr = int(self.branch_addr_hex,16)
                 self.branch_label = temp[1]
                 self.is_handle = True
             else:
@@ -196,7 +221,8 @@ class isa:
             if re_branch_reg:
                 re_branch_addr = re.match(self.__operand_branch_access_cpat,self.dtl[4])
                 temp = re_branch_addr.groups()
-                self.branch_addr = temp[0]
+                self.branch_addr_hex = temp[0]
+                self.branch_addr = int(self.branch_addr_hex,16)
                 self.branch_label = temp[1]
                 self.is_handle = True
             else:
@@ -217,7 +243,8 @@ class isa:
     def __adrp_proc(self):
         re_adrp_addr = re.match(self.__operand_adrp_access_cpat,self.dtl[4])
         temp = re_adrp_addr.groups()
-        self.adrp_addr = temp[0]
+        self.adrp_addr_hex = temp[0]
+        self.adrp_addr = int(self.adrp_addr_hex,16)
         self.adrp_label = temp[1]
         self.is_handle = True
 
