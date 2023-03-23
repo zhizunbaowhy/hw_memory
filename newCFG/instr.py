@@ -5,33 +5,38 @@ from typing import Tuple, Optional
 # 标记语句类型用的枚举类
 class AddressMode(Enum):
     
-    immOffset = auto()
-    regOffset = auto()
-    regShift = auto()
-    immBef = auto()
-    regBef = auto()
-    regShiftBef = auto()
-    immAfter  = auto()
-    regAfter  = auto()
-    regShiftAfter  = auto()
+    IMM_OFFSET = auto()
+    REG_OFFSET = auto()
+    REG_SHIFT = auto()
+    IMM_BEF = auto()
+    REF_BEF = auto()
+    REG_SHIFT_BEF = auto()
+    IMM_AFTER  = auto()
+    REG_AFTER  = auto()
+    REG_SHIFT_AFTER  = auto()
 
 # 标记语句类型用的枚举类
 class InsType(Enum):
     
-    branch = auto()
-    load = auto()
-    store = auto()
-    adr = auto()
-    mov = auto()
-    other = auto()
+    BRANCH = auto()
+    LOAD = auto()
+    STORE = auto()
+    ADR = auto()
+    MOV = auto()
+    OTHER = auto()
 
 class Re_Ins_Type:
     
     # 区分指令类型
-    branch_pat = r"b|b.|bl|bc."
+    branch_pat = r"b|b.|bl|bc.|cbnz|cbz|tbnz|tbz|ret"\
+                r"|bx|blx|blr|br|brk|hlt"
+    branch_original_pat = r"b|b.|bl|bc."
+    branch_reg_pat = r"cbnz|cbz|tbnz|tbz"
+
     load_pat = r"ldr|ldp|lda|ldu" 
     store_pat = r"str|stp|stl|stu"
     lsp_pat = r"ldp|stp"
+
     adrp_pat = r"adrp"
     move_pat = r"mov"
 
@@ -63,6 +68,8 @@ class RE_Operand_Type:
 class isa:
     #编译指令
     __branch_cpat = re.compile(Re_Ins_Type.branch_pat)
+    __branch_original_cpat = re.compile(Re_Ins_Type.branch_original_pat)
+    __branch_reg_cpat = re.compile(Re_Ins_Type.branch_reg_pat)
 
     __load_cpat = re.compile(Re_Ins_Type.load_pat)
     __store_cpat = re.compile(Re_Ins_Type.store_pat)
@@ -83,7 +90,7 @@ class isa:
     __ls_reg_cpat = re.compile(RE_Operand_Type.ls_reg_pat)
     __ls_shift_cpat = re.compile(RE_Operand_Type.ls_shift_pat)
 
-    __ls_immeOffset_cpat = re.compile(RE_Operand_Type.immeOffset_pat)
+    __ls_immeOffset_cpat = re.compile(RE_Operand_Type.ls_immeOffset_pat)
     __ls_regOffset_cpat = re.compile(RE_Operand_Type.ls_regOffset_pat)
     __ls_regShift_cpat = re.compile(RE_Operand_Type.ls_regShift_pat)
     __ls_immeBef_cpat = re.compile(RE_Operand_Type.ls_immeBef_pat)
@@ -102,7 +109,7 @@ class isa:
        
         self.operand_num = 0
         self.type = None
-        self.label = "good"
+        self.is_handle = False
 
         self.branch_addr = None
         self.branch_label = None
@@ -118,41 +125,9 @@ class isa:
         self.move_from = None
         self.move_to = None
 
-        self.ins_type()
         self.instr_operand_num()
-    
-    def ins_type(self):
+        self.ins_type()
         
-        re_branch = re.match(self.__branch_cpat,self.ins)
-        re_load = re.match(self.__load_cpat,self.ins)
-        re_store = re.match(self.__store_cpat,self.ins)
-        re_adrp = re.match(self.__adrp_cpat,self.ins)
-        re_move = re.match(self.__move_cpat,self.ins)
-        
-        if re_branch:
-            self.is_branch = True
-            self.type = InsType.branch
-            self.__branch_proc()
-        elif re_load:
-            self.is_load = True
-            self.type = InsType.load
-            self.__ls_proc()
-        elif re_store:
-            self.is_store = True
-            self.type = InsType.store
-            self.__ls_proc()
-        elif re_adrp:
-            self.is_adrp = True
-            self.type = InsType.adr
-            self.__adrp_proc()
-        elif re_move:
-            self.is_move = True
-            self.type = InsType.mov
-            print(self.is_move)
-            self.__move_proc()
-        else:
-            self.is_other = True
-            self.type = InsType.other
     
     def instr_operand_num(self):
         
@@ -164,13 +139,68 @@ class isa:
             self.operand_num = 2
         elif  self.dtl[6] == None:
             self.operand_num = 3
+    
+    def ins_type(self):
+        
+        re_branch = re.match(self.__branch_cpat,self.ins)
+        re_load = re.match(self.__load_cpat,self.ins)
+        re_store = re.match(self.__store_cpat,self.ins)
+        re_adrp = re.match(self.__adrp_cpat,self.ins)
+        re_move = re.match(self.__move_cpat,self.ins)
+        
+        if re_branch:
+            self.type = InsType.BRANCH
+            self.__branch_proc()
+        elif re_load:
+            self.type = InsType.LOAD
+            self.__ls_proc()
+        elif re_store:
+            self.type = InsType.STORE
+            self.__ls_proc()
+        elif re_adrp:
+            self.type = InsType.ADR
+            self.__adrp_proc()
+        elif re_move:
+            self.type = InsType.MOV
+            print(self.is_move)
+            self.__move_proc()
+        else:
+            self.is_other = True
+            self.type = InsType.OTHER
+    
+    
 
 
     def __branch_proc(self):
-        re_branch_addr = re.match(self.__operand_branch_access_cpat,self.dtl[3])
-        temp = re_branch_addr.groups()
-        self.branch_addr = temp[0]
-        self.branch_label = temp[1]
+        print(self.instr_operand_num)
+        if self.operand_num == 0:
+            print("here")
+            if self.ins == "ret":
+                self.branch_addr = "return"
+                self.branch_label = "return"
+                self.is_handle = True
+            else :
+                self.is_handle = False
+        elif self.operand_num == 1:
+            re_branch_original = re.match(self.__branch_original_cpat,self.ins)
+            if re_branch_original:
+                re_branch_addr = re.match(self.__operand_branch_access_cpat,self.dtl[3])
+                temp = re_branch_addr.groups()
+                self.branch_addr = temp[0]
+                self.branch_label = temp[1]
+                self.is_handle = True
+            else:
+                self.is_handle = False
+        elif self.operand_num == 2:
+            re_branch_reg = re.match(self.__branch_reg_cpat,self.ins)
+            if re_branch_reg:
+                re_branch_addr = re.match(self.__operand_branch_access_cpat,self.dtl[4])
+                temp = re_branch_addr.groups()
+                self.branch_addr = temp[0]
+                self.branch_label = temp[1]
+                self.is_handle = True
+            else:
+                self.is_handle = False
 
 
     def __ls_proc(self):
@@ -189,12 +219,14 @@ class isa:
         temp = re_adrp_addr.groups()
         self.adrp_addr = temp[0]
         self.adrp_label = temp[1]
+        self.is_handle = True
 
 
 
     def __move_proc(self):
         self.move_to = self.dtl[3]
         self.move_from = self.dtl[4]
+        self.is_handle = True
         
         
         
