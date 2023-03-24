@@ -36,3 +36,5 @@ node_modules
 .idea
 venv
 __pycache__
+*.gv
+*.svg

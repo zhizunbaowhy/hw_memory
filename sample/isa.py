@@ -21,6 +21,9 @@ class Address:
     def val(self):
         return self.__int
 
+    def __hash__(self):
+        return self.__int
+
     def __eq__(self, other):
         if isinstance(other, int):
             return self.__int == other
@@ -49,6 +52,22 @@ class Instruction:
         self.__branch_identify()
         self.__load_store_identify()
 
+    @property
+    def addr(self):
+        return self.__addr
+
+    @property
+    def opcode(self):
+        return self.__opcode
+
+    @property
+    def name(self):
+        return self.__name
+
+    @property
+    def operands(self):
+        return self.__operands
+
     def __branch_identify(self):
         self.__b = False
         self.__b_conditional = False
@@ -56,7 +75,7 @@ class Instruction:
         self.__b_imm_target_offset = None
         self.__b_imm_target_addr = None
 
-        if self.__name in ('b', 'bc', 'cbnz', 'cbz'):
+        if self.__name in ('b', 'bl', 'bc', 'cbnz', 'cbz'):
             self.__type = InstructionType.Branch
             self.__b = True
             if self.__name in ('cbnz', 'cbz') or self.__sub_name is not None:
@@ -67,9 +86,14 @@ class Instruction:
             self.__b_imm_target_label, self.__b_imm_target_offset = label, offset
 
     @property
+    def is_branch(self):
+        return self.__b
+
+    @property
     def branch_info(self):
         """ Return [bool] if is branch instruction, [bool] if is conditional,
-        [None|str] immediate-addressing target label, [None|Address] immediate-addressing target address. """
+        [None|str] immediate-addressing target label, [None|str] immediate-addressing target offset,
+        [None|Address] immediate-addressing target address. """
         return (self.__b, self.__b_conditional,
                 self.__b_imm_target_label, self.__b_imm_target_offset, self.__b_imm_target_addr)
 
