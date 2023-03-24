@@ -1,0 +1,147 @@
+digraph "Procedure Graph" {
+	_init
+	".plt"
+	"strlen@plt"
+	"exit@plt"
+	"__libc_start_main@plt"
+	"execl@plt"
+	"perror@plt"
+	"listen@plt"
+	"htonl@plt"
+	"bind@plt"
+	"sprintf@plt"
+	"pipe@plt"
+	"fork@plt"
+	"fclose@plt"
+	"atoi@plt"
+	"fopen@plt"
+	"ntohs@plt"
+	"setsockopt@plt"
+	"memset@plt"
+	"accept@plt"
+	"strcasecmp@plt"
+	"htons@plt"
+	"putenv@plt"
+	"close@plt"
+	"recv@plt"
+	"__gmon_start__@plt"
+	"stat@plt"
+	"write@plt"
+	"abort@plt"
+	"feof@plt"
+	"strcmp@plt"
+	"__ctype_b_loc@plt"
+	"send@plt"
+	"socket@plt"
+	"read@plt"
+	"dup2@plt"
+	"printf@plt"
+	"getsockname@plt"
+	"waitpid@plt"
+	"fgets@plt"
+	_start
+	__wrap_main
+	".annobin_abi_note.c"
+	_dl_relocate_static_pie
+	call_weak_fn
+	deregister_tm_clones
+	register_tm_clones
+	__do_global_dtors_aux
+	frame_dummy
+	accept_request
+	bad_request
+	cat
+	cannot_execute
+	error_die
+	execute_cgi
+	get_line
+	headers
+	not_found
+	serve_file
+	startup
+	unimplemented
+	main
+	_fini
+	_init -> call_weak_fn
+	_start -> "abort@plt"
+	_start -> "__libc_start_main@plt"
+	__wrap_main -> main
+	call_weak_fn -> "__gmon_start__@plt"
+	__do_global_dtors_aux -> deregister_tm_clones
+	frame_dummy -> register_tm_clones
+	accept_request -> get_line
+	accept_request -> "stat@plt"
+	accept_request -> "strcasecmp@plt"
+	accept_request -> serve_file
+	accept_request -> "strlen@plt"
+	accept_request -> execute_cgi
+	accept_request -> "close@plt"
+	accept_request -> "strcmp@plt"
+	accept_request -> "sprintf@plt"
+	accept_request -> unimplemented
+	accept_request -> not_found
+	accept_request -> "__ctype_b_loc@plt"
+	bad_request -> "send@plt"
+	bad_request -> "sprintf@plt"
+	cat -> "strlen@plt"
+	cat -> "send@plt"
+	cat -> "feof@plt"
+	cat -> "fgets@plt"
+	cannot_execute -> "strlen@plt"
+	cannot_execute -> "send@plt"
+	cannot_execute -> "sprintf@plt"
+	error_die -> "perror@plt"
+	error_die -> "exit@plt"
+	execute_cgi -> get_line
+	execute_cgi -> "read@plt"
+	execute_cgi -> "recv@plt"
+	execute_cgi -> "dup2@plt"
+	execute_cgi -> "sprintf@plt"
+	execute_cgi -> "pipe@plt"
+	execute_cgi -> "fork@plt"
+	execute_cgi -> "strlen@plt"
+	execute_cgi -> "write@plt"
+	execute_cgi -> "waitpid@plt"
+	execute_cgi -> "atoi@plt"
+	execute_cgi -> bad_request
+	execute_cgi -> "strcmp@plt"
+	execute_cgi -> "exit@plt"
+	execute_cgi -> cannot_execute
+	execute_cgi -> "strcasecmp@plt"
+	execute_cgi -> "send@plt"
+	execute_cgi -> "execl@plt"
+	execute_cgi -> "putenv@plt"
+	execute_cgi -> "close@plt"
+	get_line -> "recv@plt"
+	headers -> "strlen@plt"
+	headers -> "send@plt"
+	headers -> "sprintf@plt"
+	not_found -> "strlen@plt"
+	not_found -> "send@plt"
+	not_found -> "sprintf@plt"
+	serve_file -> get_line
+	serve_file -> headers
+	serve_file -> "fclose@plt"
+	serve_file -> "strcmp@plt"
+	serve_file -> cat
+	serve_file -> not_found
+	serve_file -> "fopen@plt"
+	startup -> "listen@plt"
+	startup -> "getsockname@plt"
+	startup -> "ntohs@plt"
+	startup -> "htonl@plt"
+	startup -> error_die
+	startup -> "htons@plt"
+	startup -> "setsockopt@plt"
+	startup -> "bind@plt"
+	startup -> "memset@plt"
+	startup -> "socket@plt"
+	unimplemented -> "strlen@plt"
+	unimplemented -> "send@plt"
+	unimplemented -> "sprintf@plt"
+	main -> error_die
+	main -> startup
+	main -> "printf@plt"
+	main -> "accept@plt"
+	main -> accept_request
+}

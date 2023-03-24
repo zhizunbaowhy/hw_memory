@@ -11,6 +11,7 @@ from enum import Enum, auto
 from typing import Dict, List, Optional, Sequence, Set, Tuple
 
 from graphviz import Digraph
+from graphviz.dot import Dot
 
 from sample.isa import Address, Instruction
 from sample.read_asm import StatementType
@@ -132,8 +133,10 @@ class CallGraphNode:
         self.__name = name
         self.__proc = proc
         self.__is_plt = proc.name.endswith('@plt')
+
         self.from_edges = list()
         self.to_edges = list()
+        self.rtn_return = True
 
     @property
     def name(self):
@@ -232,7 +235,7 @@ class TCfgNode:
 
     @property
     def inst_range(self):
-        return self.__instructions[0].addr.hex_str(), self.__instructions[-1].addr.hex_str()
+        return self.__instructions[0].addr, self.__instructions[-1].addr
 
     @property
     def instructions(self):
@@ -270,15 +273,21 @@ class TCfg:
     def __init__(self, call_graph: CallGraph):
         self.__call_graph = call_graph
 
-        self.__nodes: List[TCfgNode] = list()
+        self.__nodes_mapping: Dict[CallGraphNode, List[TCfgNode]] = dict()
         self.__edges: List[TCfgEdge] = list()
 
         self.__build()
 
+    def __new_edge(self, src: TCfgNode, dst: TCfgNode, kind: TCfgEdgeType):
+        new_edge = TCfgEdge(src, dst, kind)
+        src.from_edge.append(new_edge)
+        dst.to_edge.append(new_edge)
+        self.__edges.append(new_edge)
+
     def __build(self):
         global_idx = 0
-        nodes_mapping: Dict[CallGraphNode, List[TCfgNode]] = dict()
         finish_node_mapping: Dict[CallGraphNode, TCfgNode] = dict()
+        call_proc_mapping: Dict[str, CallGraphNode] = {p.name: p for p in self.__call_graph.nodes}
 
         for call_proc in self.__call_graph.nodes:
             proc = call_proc.procedure
@@ -301,31 +310,111 @@ class TCfg:
                     all_nodes.append(new_node)
                     inst_slicing.clear()
                 inst_slicing.append(inst)
-                if inst.name == 'rtn' or inst.is_branch:
+                if inst.name == 'ret' or inst.is_branch:
                     new_node = TCfgNode('n{}'.format(global_idx), call_proc, inst_slicing)
                     global_idx += 1
                     all_nodes.append(new_node)
                     inst_slicing.clear()
-                    # Check if current node has a ``rtn`` instruction.
-                    if inst.name == 'rtn':
+                    # Check if current node has a ``ret`` instruction.
+                    if inst.name == 'ret':
                         if call_proc in finish_node_mapping:
                             raise RuntimeError("Multi-return statement in one procedure is not allowed.")
                         finish_node_mapping[call_proc] = new_node
+                        call_proc.rtn_return = True
             else:
                 if len(inst_slicing) != 0:
                     new_node = TCfgNode('n{}'.format(global_idx), call_proc, inst_slicing)
                     global_idx += 1
                     all_nodes.append(new_node)
 
-            nodes_mapping[call_proc] = all_nodes
-            self.__nodes.extend(all_nodes)
+            self.__nodes_mapping[call_proc] = all_nodes
             if call_proc not in finish_node_mapping:
                 finish_node_mapping[call_proc] = all_nodes[-1]
+                call_proc.rtn_return = False
+
+        for call_proc, cfg_nodes in self.__nodes_mapping.items():
+            proc = call_proc.procedure
+            for node_idx, node in enumerate(cfg_nodes):
+                # For a node in TCfg, if it has branch instruction, then the last one is branch instruction.
+                final_inst = node.instructions[-1]
+                b, cond, label, offset, addr = final_inst.branch_info
+                if not b:
+                    try:
+                        next_node = cfg_nodes[node_idx + 1]
+                    except IndexError:
+                        # This node is the last one in this sub-procedure.
+                        pass
+                    else:
+                        self.__new_edge(node, next_node, TCfgEdgeType.Textual)
+                else:
+                    if label == proc.name:
+                        """ For node with branch targeting current sub-procedure """
+                        target_addr = addr.val()
+                        target_node: TCfgNode
+                        for check_node in cfg_nodes:
+                            if check_node.inst_range[0].val() == target_addr:
+                                target_node = check_node
+                                break
+                        else:
+                            raise KeyError("Do not found target node with start address {} in sub-procedure {}.".format(addr.hex_str(), call_proc.name))
+                        self.__new_edge(node, target_node, TCfgEdgeType.BranchTaken)
+
+                    else:
+                        """ For node with branch targeting different sub-procedure """
+                        target_call_proc_name = "{}|{}#{}".format(call_proc.name, final_inst.addr.hex_str(), label)
+                        if target_call_proc_name not in call_proc_mapping:
+                            raise KeyError("Do not found target sub-procedure with name {}.".format(target_call_proc_name))
+                        target_call_proc = call_proc_mapping[target_call_proc_name]
+                        # Edge from current node to start node of target sub-procedure
+                        self.__new_edge(node, self.__nodes_mapping[target_call_proc][0], TCfgEdgeType.BranchTaken)
+                        # Edge from finish node of target sub-procedure to next of current node
+                        try:
+                            next_node = cfg_nodes[node_idx + 1]
+                        except IndexError:
+                            # This node is the last one in this procedure.
+                            pass
+                        else:
+                            kind = TCfgEdgeType.ProcReturn if target_call_proc.rtn_return else TCfgEdgeType.Believed
+                            self.__new_edge(finish_node_mapping[target_call_proc], next_node, kind)
+
+                    # For conditional branch, a non-taken edge should be added.
+                    if cond:
+                        try:
+                            next_node = cfg_nodes[node_idx + 1]
+                        except IndexError:
+                            # This node is the last one in this sub-procedure.
+                            pass
+                        else:
+                            self.__new_edge(node, next_node, TCfgEdgeType.BranchNoTaken)
 
     @property
-    def nodes(self):
-        return tuple(self.__nodes)
+    def nodes_mapping(self):
+        return types.MappingProxyType(self.__nodes_mapping)
+
+    @property
+    def all_nodes(self):
+        return sum(list(self.__nodes_mapping.values()), list())
 
     @property
     def edges(self):
         return tuple(self.__edges)
+
+    def draw_graph(self, filename='tcfg.gv', fmt='svg') -> Digraph:
+        g = Digraph('TCFG', filename=filename, format=fmt)
+        for call_proc, cfg_nodes in self.__nodes_mapping.items():
+            for node in cfg_nodes:
+                r = node.inst_range
+                g.node(node.name, "{}\n({},{})".format(node.base_proc.procedure.name, r[0].hex_str(), r[1].hex_str()))
+        for edge in self.__edges:
+            kind = edge.kind
+            if kind == TCfgEdgeType.Textual:
+                g.edge(edge.src.name, edge.dst.name)
+            elif kind == TCfgEdgeType.BranchTaken:
+                g.edge(edge.src.name, edge.dst.name, color='green')
+            elif kind == TCfgEdgeType.BranchNoTaken:
+                g.edge(edge.src.name, edge.dst.name, color='red')
+            elif kind == TCfgEdgeType.ProcReturn:
+                g.edge(edge.src.name, edge.dst.name, color='purple')
+            elif kind == TCfgEdgeType.Believed:
+                g.edge(edge.src.name, edge.dst.name, style='dashed')
+        return g
