@@ -147,7 +147,7 @@ class Ins:
         self.addr_hex = statment_dtl[0]
         self.addr = int(self.addr_hex,16)
         self.opcode = statment_dtl[1]
-        self.ins = statment_dtl[2]
+        self.name = statment_dtl[2]
         self.stat_line = line
        
         self.operand_num = 0
@@ -187,11 +187,11 @@ class Ins:
     
     def ins_type(self):
         
-        re_branch = re.match(self.__branch_cpat,self.ins)
-        re_load = re.match(self.__load_cpat,self.ins)
-        re_store = re.match(self.__store_cpat,self.ins)
-        re_adrp = re.match(self.__adrp_cpat,self.ins)
-        re_move = re.match(self.__move_cpat,self.ins)
+        re_branch = re.match(self.__branch_cpat,self.name)
+        re_load = re.match(self.__load_cpat,self.name)
+        re_store = re.match(self.__store_cpat,self.name)
+        re_adrp = re.match(self.__adrp_cpat,self.name)
+        re_move = re.match(self.__move_cpat,self.name)
         
         if re_branch:
             self.type = InsType.BRANCH
@@ -215,8 +215,9 @@ class Ins:
 
 
     def __branch_proc(self):
+        print(self.dtl)
         if self.operand_num == 0:
-            if self.ins == "ret":
+            if self.name == "ret":
                 self.branch_addr_hex = "return"
                 self.branch_addr = "return"
                 self.branch_label = "return"
@@ -224,7 +225,7 @@ class Ins:
             else :
                 self.is_handle = False
         elif self.operand_num == 1:
-            re_branch_original = re.match(self.__branch_original_cpat,self.ins)
+            re_branch_original = re.match(self.__branch_original_cpat,self.name)
             if re_branch_original:
                 re_branch_addr = re.match(self.__operand_branch_access_cpat,self.dtl[3])
                 temp = re_branch_addr.groups()
@@ -235,7 +236,7 @@ class Ins:
             else:
                 self.is_handle = False
         elif self.operand_num == 2:
-            re_branch_reg = re.match(self.__branch_reg_cpat,self.ins)
+            re_branch_reg = re.match(self.__branch_reg_cpat,self.name)
             if re_branch_reg:
                 re_branch_addr = re.match(self.__operand_branch_access_cpat,self.dtl[4])
                 temp = re_branch_addr.groups()
@@ -248,10 +249,13 @@ class Ins:
 
 
     def __ls_proc(self):
-        re_lsp = re.match(self.__lsp_cpat,self.ins)
+        re_lsp = re.match(self.__lsp_cpat,self.name)
 
         if re_lsp:
             self.is_lsp = True
+        elif self.instr_operand_num == 2:
+            #前两种寻址方式
+            pass
         else:
             pass
     

@@ -31,3 +31,8 @@ node_modules
 
 #vscode 
 .vscode
+
+# PyCharm
+.idea
+venv
+__pycache__
