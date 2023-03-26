@@ -28,6 +28,7 @@ class Re_LoadStore_Operand:
     ls_split_pat = r"^\s*((?:(?:x|w)\d*)|wzr|xzr)\,\s*([\s\S]*)\s*$"
     ls_bracket_pat = r"^\[.*\]$"
     ls_bracketUpdate_pat = r"^\[.*\]!$"
+    ls_bracketUpdateAft_pat = r"^\[.*\]\s*\,\s*(?:[\s\S]*)\s*"
     ls_bracket_sp_pat = r"\[[\s\S]*sp[\s\S]*\]"
     ls_bracket_reg_pat = r"(\[((?:x|w)\d*)\])"
     ls_sp_pat = r"(sp)"
@@ -42,8 +43,10 @@ class Re_LoadStore_Operand:
     ls_immeBef_pat = r"\[((?:x|w)\d*)\s*\,\s*\#(-?)((?:\d*|0x[0-9a-fA-F]*))\]!"
     ls_regBef_pat = r"\[((?:x|w)\d*)\s*\,\s*(-?)((?:x|w)\d*)\]!"
     ls_regShiftBef_pat = r"\[((?:x|w)\d*)\s*\,\s*(-?)((?:x|w)\d*)\s*\,\s*(LSL|LSR|ASR|ROR)\s*\#(-?)((?:\d*|0x[0-9a-fA-F]*))\]!"
-
-
+    #后更新寻址  
+    ls_immeAft_pat = r"\[((?:x|w)\d*)\]\s*\,\s*\#(-?)((?:\d*|0x[0-9a-fA-F]*))"
+    ls_regAft_pat = r"\[((?:x|w)\d*)\]\s*\,\s*(-?)((?:x|w)\d*)"
+    ls_regShiftAft_pat = r"\[((?:x|w)\d*)\]\s*\,\s*(-?)((?:x|w)\d*)\s*\,\s*(LSL|LSR|ASR|ROR)\s*\#(-?)((?:\d*|0x[0-9a-fA-F]*))"
 
 
 class Address:
@@ -72,10 +75,9 @@ class Address:
 class InstructionType(Enum):
     # TODO: Add more instruction types.
     Branch = auto()
-    Load = auto()
-    Store = auto()
-    adr = auto()
-    mov = auto()
+    LoadStore = auto()
+    Adrp = auto()
+    Mov = auto()
     Unknown = auto()
 
 class AddrMode(Enum):
@@ -108,6 +110,7 @@ class Instruction:
     __ls_split_cpat = re.compile(Re_LoadStore_Operand.ls_split_pat)
     __ls_bracket_cpat = re.compile(Re_LoadStore_Operand.ls_bracket_pat)
     __ls_bracketUpdate_cpat = re.compile(Re_LoadStore_Operand.ls_bracketUpdate_pat)
+    __ls_bracketUpdateAft_cpat = re.compile(Re_LoadStore_Operand.ls_bracketUpdateAft_pat)
     __ls_bracket_sp_cpat = re.compile(Re_LoadStore_Operand.ls_bracket_sp_pat)
     __ls_bracket_reg_cpat = re.compile(Re_LoadStore_Operand.ls_bracket_reg_pat)
     __ls_sp_cpat = re.compile(Re_LoadStore_Operand.ls_sp_pat)
@@ -121,6 +124,9 @@ class Instruction:
     __ls_immeBef_cpat = re.compile(Re_LoadStore_Operand.ls_immeBef_pat)
     __ls_regBef_cpat = re.compile(Re_LoadStore_Operand.ls_regBef_pat)
     __ls_regShiftBef_cpat = re.compile(Re_LoadStore_Operand.ls_regShiftBef_pat)
+    __ls_immeAft_cpat = re.compile(Re_LoadStore_Operand.ls_immeAft_pat)
+    __ls_regAft_cpat = re.compile(Re_LoadStore_Operand.ls_regAft_pat)
+    __ls_regShiftAft_cpat = re.compile(Re_LoadStore_Operand.ls_regShiftAft_pat)
 
     def __init__(self, tokens: Sequence[str]):
         
@@ -154,8 +160,12 @@ class Instruction:
     def operands(self):
         return self.__operands
 
+    @property
+    def ins_type(self):
+        return self.__type
+    
     def __branch_identify(self):
-        self.__b = False
+        self.__is_b = False
         self.__b_conditional = False
         self.__b_imm_target_label = None
         self.__b_imm_target_offset = None
@@ -164,7 +174,7 @@ class Instruction:
         if self.__name in ('b', 'bl', 'bc', 'cbnz', 'cbz'):
             self.__operands = [o.strip() for o in self.tokens[4].split(',')]
             self.__type = InstructionType.Branch
-            self.__b = True
+            self.__is_b = True
             if self.__name in ('cbnz', 'cbz') or self.__sub_name is not None:
                 self.__b_conditional = True
             # TODO: Not all branch instructions is immediate-addressing.
@@ -174,27 +184,29 @@ class Instruction:
 
     @property
     def is_branch(self):
-        return self.__b
+        return self.__is_b
 
     @property
     def branch_info(self):
         """ Return [bool] if is branch instruction, [bool] if is conditional,
         [None|str] immediate-addressing target label, [None|str] immediate-addressing target offset,
         [None|Address] immediate-addressing target address. """
-        return (self.__b, self.__b_conditional,
+        return (self.__is_b, self.__b_conditional,
                 self.__b_imm_target_label, self.__b_imm_target_offset, self.__b_imm_target_addr)
 
     def __load_store_identify(self):
-        self.__ls = False
-        self.rd = None
-        self.is_nsp = False
-        self.ls_reg_traget = None
-        self.addr_offset = 0
-        self.addr_mode = None
+        self.__is_ls = False
+        self.__is_nsp = False#用于判断是否是sp寄存器
+
+        self.__ls_first_opperand = None
+        self.__ls_reg_traget = None
+        self.__ls_addr_offset = None
+        self.__ls_addr_mode = None
 
         is_loadstore = re.match(self.__loadstore_cpat,self.__name)
         if is_loadstore:
-            self.__ls = True
+            self.__type = InstructionType.LoadStore
+            self.__is_ls = True
             is_lsp = re.match(self.__lsp_cpat,self.__name)
             if is_lsp:
                 pass
@@ -202,60 +214,133 @@ class Instruction:
                 # is_sp = re.match(self.__ls_sp_cpat)
                 ls_op_slip = re.match(self.__ls_split_cpat,self.tokens[4])
                 temp_op = ls_op_slip.groups()
-                self.rd = temp_op[0]
+                self.__ls_first_opperand = temp_op[0]
                 self.addrmode = temp_op[1]
 
                 is_bracket = re.match(self.__ls_bracket_cpat,self.addrmode)
                 is_bracket_upgrade = re.match(self.__ls_bracketUpdate_cpat,self.addrmode)
-
-                if is_bracket_upgrade:
-
+                is_bracket_upgrade_aft = re.match(self.__ls_bracketUpdateAft_cpat,self.addrmode)
+                if is_bracket_upgrade_aft:
+                    print("here")
+                    print(self.tokens)
+                    is_immAft = re.match(self.__ls_immeAft_cpat,self.addrmode)
+                    print(is_immAft)
+                    is_regAft = re.match(self.__ls_regAft_cpat,self.addrmode)
+                    is_regShiftAft = re.match(self.__ls_regShiftAft_cpat,self.addrmode)
+                    if is_immAft:
+                        self.__ls_addr_mode = AddrMode.ImmeAft
+                        temp = is_immAft.groups()
+                        
+                        target_reg = temp[0]
+                        pm = temp[1]
+                        strOffset = temp[2]
+                        self.__immOffsetTypeProc(target_reg,pm,strOffset)
+                    elif is_regAft:
+                        self.__ls_addr_mode = AddrMode.RegAft
+                    elif is_regShiftAft:
+                        self.__ls_addr_mode = AddrMode.RegShiftAft
+                elif is_bracket_upgrade:
                     is_immBef = re.match(self.__ls_immeBef_cpat,self.addrmode)
                     is_regBef = re.match(self.__ls_regBef_cpat,self.addrmode)
                     is_regShiftBef = re.match(self.__ls_regShiftBef_cpat,self.addrmode)
-
                     if is_immBef:
-                        self.addr_mode = AddrMode.ImmeBef
+                        self.__ls_addr_mode = AddrMode.ImmeBef
+                        temp = is_immBef.groups()
+                        
+                        target_reg = temp[0]
+                        pm = temp[1]
+                        strOffset = temp[2]
+                        self.__immOffsetTypeProc(target_reg,pm,strOffset)
                     elif is_regBef:
-                        self.addr_mode = AddrMode.RegBef
+                        self.__ls_addr_mode = AddrMode.RegBef
                     elif is_regShiftBef:
-                        self.addr_mode = AddrMode.RegShiftBef
-                    
-                    
+                        self.__ls_addr_mode = AddrMode.RegShiftBef
                 elif is_bracket:
-
                     is_immOffset = re.match(self.__ls_immeOffset_cpat,self.addrmode)
                     is_regOffset = re.match(self.__ls_regOffset_cpat,self.addrmode)
                     is_regShift = re.match(self.__ls_regShift_cpat,self.addrmode)
 
                     if is_immOffset:
-                        self.addr_mode = AddrMode.ImmeOffset
+                        self.__ls_addr_mode = AddrMode.ImmeOffset
+                        temp = is_immOffset.groups()
+
+                        target_reg = temp[0]
+                        pm = temp[1]
+                        strOffset = temp[2]
+                        self.__immOffsetTypeProc(target_reg,pm,strOffset)
                     elif is_regOffset:
-                        self.addr_mode = AddrMode.RegOffset
+                        self.__ls_addr_mode = AddrMode.RegOffset
                     elif is_regShift:
-                        self.addr_mode = AddrMode.RegShift
-                    
-                else:
-                    pass
+                        self.__ls_addr_mode = AddrMode.RegShift
+
+
+        
+    def __is_sp(self):
+        re_sp = re.match(self.__ls_sp_cpat,self.__ls_reg_traget)
+        if re_sp:
+            self.__is_nsp = True
+        
+    def __immOffsetTypeProc(self,reg_target,offset_pm,offset_str):
+        self.__ls_reg_traget = reg_target
+        pm = offset_pm
+        strOffset = offset_str
+
+        if self.__ls_reg_traget == "sp":
+            self.__is_nsp = False
+        else:
+            self.__is_nsp = True
+        
+        if pm == '':
+            if strOffset[0:2] == "0x":
+                self.__ls_addr_offset = int(strOffset,16)
+            else:
+                self.__ls_addr_offset = int(strOffset)
+        else:
+            if strOffset[0:2] == "0x":
+                self.__ls_addr_offset = -int(strOffset,16)
+            else:
+                self.__ls_addr_offset = -int(strOffset)
+            
 
     @property
     def is_ls(self):
-        return self.__ls
-
+        return self.__is_ls
+    
+    @property
+    def is_nsp(self):
+        return self.__is_nsp
+    
+    @property
+    def ls_first_opperand(self):
+        return self.__ls_first_opperand
+    
+    @property
+    def ls_reg_traget(self):
+        return self.__ls_reg_traget
+    
+    @property
+    def ls_addr_offset(self):
+        return self.__ls_addr_offset
+    
+    @property
+    def ls_addr_mode(self):
+        return self.__ls_addr_mode
+    
 
     def __adrp_identify(self):
 
-        self.__adrp = False
+        self.__is_adrp = False
         self.__adrp_addr = None
         self.__adrp_label = None
-        self.__adrp_reg = None
+        self.__adrp_first_opperand = None
 
         if self.__name == "adrp":
-            self.__adrp = True
+            self.__type = InstructionType.Adrp
+            self.__is_adrp = True
 
             ls_op_slip = re.match(self.__ls_split_cpat,self.tokens[4])
             temp_op = ls_op_slip.groups()
-            self.__adrp_reg = temp_op[0]
+            self.__adrp_first_opperand = temp_op[0]
             addr = temp_op[1]
 
             re_adrp_addr = re.match(self.__operand_adrp_access_cpat,addr)
@@ -265,7 +350,7 @@ class Instruction:
             
     @property
     def is_adrp(self):
-        return self.__adrp
+        return self.__is_adrp
     
     @property
     def adrp_addr(self):
@@ -276,34 +361,35 @@ class Instruction:
         return self.__adrp_label
     
     @property
-    def adrp_reg(self):
-        return self.__adrp_reg
+    def adrp_first_opperand(self):
+        return self.__adrp_first_opperand
     # TODO: Add more identify functions and call them in ``__init__()``.
 
     def __mov_identity(self):
 
-        self.__mov = False
-        self.__mov_reg = None
-        self.__mov_from = None
+        self.__is_mov = False
+        self.__mov_first_opperand = None
+        self.__mov_target = None
 
         if self.__name in ('mov'):
-            self.__mov = True
+            self.__type = InstructionType.Mov
+            self.__is_mov = True
             temp = [o.strip() for o in self.tokens[4].split(',')]
 
-            self.__mov_reg = temp[0]
-            self.__mov_from = temp[1]
+            self.__mov_first_opperand = temp[0]
+            self.__mov_target = temp[1]
     
     @property
     def is_mov(self):
-        return self.__mov
+        return self.__is_mov
     
     @property
-    def mov_reg_to(self):
-        return self.__mov_reg
+    def mov_first_opperand(self):
+        return self.__mov_first_opperand
     
     @property
-    def mov_from(self):
-        return self.__mov_from
+    def mov_target(self):
+        return self.__mov_target
 
 
 
