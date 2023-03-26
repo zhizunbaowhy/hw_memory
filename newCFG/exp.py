@@ -1,10 +1,10 @@
-#做实验用的代码
+import re
 
-find_idx = 0 
-find_end = 12
-find_stat = ""
-while find_idx < find_end:
-    res = find_idx
-    find_idx += 1
 
-print(res)
+
+addr_nozero_pat = r"(?:b$)|(b\.)|(bl$)|(bc\.)"
+
+__addr_nozero_cpat = re.compile(addr_nozero_pat)
+
+re_addr_nozero =re.match(__addr_nozero_cpat,"br")
+print(re_addr_nozero)

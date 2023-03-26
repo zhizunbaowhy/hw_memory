@@ -1,25 +1,36 @@
 #做测试用的代码
-from readfile import ASMFileReader
-from instr import isa
+from readfile import ASMFileReader,StatementType
+from instr import Ins,Symbol,Section,stat_collection
 from loadstore import LoadStore
 from cfg_gen import cfg_gen
 from cfg_preparation import CFGNode_and_edge
 
 #测试readfile
-testFileObj = ASMFileReader("/Users/gugujixiao/workspace/project/HWMemory/Code/HW-Memory/example/old_example/func.asm")
+testFileObj = ASMFileReader("/Users/gugujixiao/workspace/project/HWMemory/Code/HW-Memory/example/old_example/forTest.asm")
 stat_obj = testFileObj.statements_table
-for i in stat_obj:
-    print(i)
-print(stat_obj[126][1])
+
 
 #stat_line =testFileObj.statements_table
 #stat_dtl = testFileObj.find_addr('400608')
 #for i in stat_line:
-#    print(i)
-insObj = isa(stat_obj[126][1],126)
-print(insObj.is_branch)
-print(insObj.branch_addr)
-print(insObj.branch_label)
+#insObj = Ins(stat_obj[line - 1][1],line)
+
+#symbolObj = Symbol(stat_obj[line - 1][1],line)
+#sectionObj = Section(stat_obj[line - 1][1],line)
+#print(sectionObj.label)
+#print(sectionObj.line)
+collect_obj = stat_collection(testFileObj)
+ins_obj = collect_obj.insObject
+'''for i in ins_obj:
+    stat_type = i[0]
+    stat_obj = i[1]
+    if stat_type == StatementType.Section:
+        print(stat_obj.label)
+    elif stat_type == StatementType.Symbol:
+        print(stat_obj.label)
+    elif stat_type == StatementType.Instruction:
+        print(stat_obj.dtl)
+'''
 
 #测试instr
 
