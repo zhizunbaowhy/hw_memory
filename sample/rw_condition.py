@@ -1,11 +1,24 @@
 import queue
 
-class CFG_Node:
-    def __init__(self,nodeObj):
-        node_from = None
-        node_to = None
-        loop_from = None
-        loop_to = None
+class hw_CFG_Node:
+    def __init__(self,node):
+        self.node_self = node
+        self.node_from = list()#来的点
+        self.node_to = list()#出去的点
+        self.instr = node.instructions
+
+
+        for i in self.node_self.to_edge:
+            self.node_from.append(i.src)
+        for i in self.node_self.from_edge:
+            self.node_to.append(i.dst)
+        
+
+        node_from_num = 0
+        is_head = False
+        node_to_num = 0
+        is_end = False
+
 
         stat_rang = None
         re_value = 0
