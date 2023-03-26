@@ -6,8 +6,44 @@
 @Description: 
 """
 import re
-from enum import auto
+from enum import Enum, auto
 from typing import Sequence
+
+class Re_LoadStore_Ins:
+    
+    #去除地址中的0
+    addr_nozero_pat = r"(0*)([1-9a-fA-F][0-9a-fA-F]*)"
+    # 区分指令类型
+    loadstore_pat = r"ldr|ldp|lda|ldu|str|stp|stl|stu" 
+    lsp_pat = r"ldp|stp"
+
+    adrp_pat = r"adrp"
+    move_pat = r"mov"
+
+class Re_LoadStore_Operand:
+    #adrp
+    operand_adrp_access_pat = r"([0-9a-fA-F]*)\s*(<.*>)"
+    #ls判断流程
+    #特殊情况
+    ls_split_pat = r"^\s*((?:(?:x|w)\d*)|wzr|xzr)\,\s*([\s\S]*)\s*$"
+    ls_bracket_pat = r"^\[.*\]$"
+    ls_bracketUpdate_pat = r"^\[.*\]!$"
+    ls_bracket_sp_pat = r"\[[\s\S]*sp[\s\S]*\]"
+    ls_bracket_reg_pat = r"(\[((?:x|w)\d*)\])"
+    ls_sp_pat = r"(sp)"
+    ls_immOffset_pat = r"\#(?:\d*|0x[0-9a-fA-F]*)"
+    ls_reg_pat = r"((?:x|w)\d*)"
+    ls_shift_pat = r"(LSL|LSR|ASR|ROR)"
+    #偏移寻址
+    ls_immeOffset_pat = r"\[((?:x|w)\d*)\s*\,\s*\#(-?)((?:\d*|0x[0-9a-fA-F]*))\]"
+    ls_regOffset_pat = r"\[((?:x|w)\d*)\s*\,\s*(-?)((?:x|w)\d*)\]"
+    ls_regShift_pat = r"\[((?:x|w)\d*)\s*\,\s*(-?)((?:x|w)\d*)\s*\,\s*(LSL|LSR|ASR|ROR)\s*\#(-?)((?:\d*|0x[0-9a-fA-F]*))\]"
+    #先更新寻址
+    ls_immeBef_pat = r"\[((?:x|w)\d*)\s*\,\s*\#(-?)((?:\d*|0x[0-9a-fA-F]*))\]!"
+    ls_regBef_pat = r"\[((?:x|w)\d*)\s*\,\s*(-?)((?:x|w)\d*)\]!"
+    ls_regShiftBef_pat = r"\[((?:x|w)\d*)\s*\,\s*(-?)((?:x|w)\d*)\s*\,\s*(LSL|LSR|ASR|ROR)\s*\#(-?)((?:\d*|0x[0-9a-fA-F]*))\]!"
+
+
 
 
 class Address:
@@ -33,24 +69,74 @@ class Address:
             return self.__int == other.__int
 
 
-class InstructionType:
+class InstructionType(Enum):
     # TODO: Add more instruction types.
     Branch = auto()
+    Load = auto()
+    Store = auto()
+    adr = auto()
+    mov = auto()
     Unknown = auto()
+
+class AddrMode(Enum):
+
+    ImmeOffset = auto()
+    RegOffset = auto()
+    RegShift = auto()
+
+    ImmeBef = auto()
+    RegBef= auto()
+    RegShiftBef= auto()
+
+    ImmeAft = auto()
+    RegAft= auto()
+    RegShiftAft= auto()
 
 
 class Instruction:
     restr_b_imm_target = r"([0-9a-fA-F]+)\s*<([^+-]*?)([+-][^+-]*?)?>"
 
+
+    #编译指令
+    __loadstore_cpat = re.compile(Re_LoadStore_Ins.loadstore_pat)
+    __lsp_cpat = re.compile(Re_LoadStore_Ins.lsp_pat)
+
+    __adrp_cpat = re.compile(Re_LoadStore_Ins.adrp_pat)
+    __move_cpat = re.compile(Re_LoadStore_Ins.move_pat)
+    #编译操作数
+    __operand_adrp_access_cpat = re.compile(Re_LoadStore_Operand.operand_adrp_access_pat)
+    __ls_split_cpat = re.compile(Re_LoadStore_Operand.ls_split_pat)
+    __ls_bracket_cpat = re.compile(Re_LoadStore_Operand.ls_bracket_pat)
+    __ls_bracketUpdate_cpat = re.compile(Re_LoadStore_Operand.ls_bracketUpdate_pat)
+    __ls_bracket_sp_cpat = re.compile(Re_LoadStore_Operand.ls_bracket_sp_pat)
+    __ls_bracket_reg_cpat = re.compile(Re_LoadStore_Operand.ls_bracket_reg_pat)
+    __ls_sp_cpat = re.compile(Re_LoadStore_Operand.ls_sp_pat)
+    __ls_immOffset_cpat = re.compile(Re_LoadStore_Operand.ls_immOffset_pat)
+    __ls_reg_cpat = re.compile(Re_LoadStore_Operand.ls_reg_pat)
+    __ls_shift_cpat = re.compile(Re_LoadStore_Operand.ls_shift_pat)
+
+    __ls_immeOffset_cpat = re.compile(Re_LoadStore_Operand.ls_immeOffset_pat)
+    __ls_regOffset_cpat = re.compile(Re_LoadStore_Operand.ls_regOffset_pat)
+    __ls_regShift_cpat = re.compile(Re_LoadStore_Operand.ls_regShift_pat)
+    __ls_immeBef_cpat = re.compile(Re_LoadStore_Operand.ls_immeBef_pat)
+    __ls_regBef_cpat = re.compile(Re_LoadStore_Operand.ls_regBef_pat)
+    __ls_regShiftBef_cpat = re.compile(Re_LoadStore_Operand.ls_regShiftBef_pat)
+
     def __init__(self, tokens: Sequence[str]):
+        
+        self.tokens = tokens
         self.__addr = Address(tokens[0])
         self.__opcode = tokens[1]
-        self.__name, self.__sub_name = tokens[2], tokens[3]
-        self.__operands = [o.strip() for o in tokens[4].split(',')]
+        self.__name, self.__sub_name = tokens[2], tokens[3]#name就是指令名，subname则是例如b.eq这类
+        self.__operands = tokens[4]
+        #self.__operand = tokens[4]
         self.__type = InstructionType.Unknown
+
 
         self.__branch_identify()
         self.__load_store_identify()
+        self.__adrp_identify()
+        self.__mov_identity()
 
     @property
     def addr(self):
@@ -76,6 +162,7 @@ class Instruction:
         self.__b_imm_target_addr = None
 
         if self.__name in ('b', 'bl', 'bc', 'cbnz', 'cbz'):
+            self.__operands = [o.strip() for o in self.tokens[4].split(',')]
             self.__type = InstructionType.Branch
             self.__b = True
             if self.__name in ('cbnz', 'cbz') or self.__sub_name is not None:
@@ -98,7 +185,125 @@ class Instruction:
                 self.__b_imm_target_label, self.__b_imm_target_offset, self.__b_imm_target_addr)
 
     def __load_store_identify(self):
-        pass
+        self.__ls = False
+        self.rd = None
+        self.is_nsp = False
+        self.ls_reg_traget = None
+        self.addr_offset = 0
+        self.addr_mode = None
 
+        is_loadstore = re.match(self.__loadstore_cpat,self.__name)
+        if is_loadstore:
+            self.__ls = True
+            is_lsp = re.match(self.__lsp_cpat,self.__name)
+            if is_lsp:
+                pass
+            else:
+                # is_sp = re.match(self.__ls_sp_cpat)
+                ls_op_slip = re.match(self.__ls_split_cpat,self.tokens[4])
+                temp_op = ls_op_slip.groups()
+                self.rd = temp_op[0]
+                self.addrmode = temp_op[1]
+
+                is_bracket = re.match(self.__ls_bracket_cpat,self.addrmode)
+                is_bracket_upgrade = re.match(self.__ls_bracketUpdate_cpat,self.addrmode)
+
+                if is_bracket_upgrade:
+
+                    is_immBef = re.match(self.__ls_immeBef_cpat,self.addrmode)
+                    is_regBef = re.match(self.__ls_regBef_cpat,self.addrmode)
+                    is_regShiftBef = re.match(self.__ls_regShiftBef_cpat,self.addrmode)
+
+                    if is_immBef:
+                        self.addr_mode = AddrMode.ImmeBef
+                    elif is_regBef:
+                        self.addr_mode = AddrMode.RegBef
+                    elif is_regShiftBef:
+                        self.addr_mode = AddrMode.RegShiftBef
+                    
+                    
+                elif is_bracket:
+
+                    is_immOffset = re.match(self.__ls_immeOffset_cpat,self.addrmode)
+                    is_regOffset = re.match(self.__ls_regOffset_cpat,self.addrmode)
+                    is_regShift = re.match(self.__ls_regShift_cpat,self.addrmode)
+
+                    if is_immOffset:
+                        self.addr_mode = AddrMode.ImmeOffset
+                    elif is_regOffset:
+                        self.addr_mode = AddrMode.RegOffset
+                    elif is_regShift:
+                        self.addr_mode = AddrMode.RegShift
+                    
+                else:
+                    pass
+
+    @property
+    def is_ls(self):
+        return self.__ls
+
+
+    def __adrp_identify(self):
+
+        self.__adrp = False
+        self.__adrp_addr = None
+        self.__adrp_label = None
+        self.__adrp_reg = None
+
+        if self.__name == "adrp":
+            self.__adrp = True
+
+            ls_op_slip = re.match(self.__ls_split_cpat,self.tokens[4])
+            temp_op = ls_op_slip.groups()
+            self.__adrp_reg = temp_op[0]
+            addr = temp_op[1]
+
+            re_adrp_addr = re.match(self.__operand_adrp_access_cpat,addr)
+            temp = re_adrp_addr.groups()
+            self.__adrp_addr = temp[0]
+            self.__adrp_label = temp[1]
+            
+    @property
+    def is_adrp(self):
+        return self.__adrp
+    
+    @property
+    def adrp_addr(self):
+        return self.__adrp_addr
+    
+    @property
+    def adrp_label(self):
+        return self.__adrp_label
+    
+    @property
+    def adrp_reg(self):
+        return self.__adrp_reg
     # TODO: Add more identify functions and call them in ``__init__()``.
+
+    def __mov_identity(self):
+
+        self.__mov = False
+        self.__mov_reg = None
+        self.__mov_from = None
+
+        if self.__name in ('mov'):
+            self.__mov = True
+            temp = [o.strip() for o in self.tokens[4].split(',')]
+
+            self.__mov_reg = temp[0]
+            self.__mov_from = temp[1]
+    
+    @property
+    def is_mov(self):
+        return self.__mov
+    
+    @property
+    def mov_reg_to(self):
+        return self.__mov_reg
+    
+    @property
+    def mov_from(self):
+        return self.__mov_from
+
+
 

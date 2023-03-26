@@ -11,15 +11,20 @@ from enum import Enum, auto
 
 
 class StatementType(Enum):
+
     Instruction = auto()
     SubProcedure = auto()
 
 
 class AsmFileReader:
-    restr_inst = r"^\s*([0-9a-fA-F]{6}):\s*([00-9a-fA-F]{8})\s*([A-Za-z0-9]+)(?:\.([A-Za-z0-9]+))?\s*(.*?)(?://.*)?$"
+
+    # 操作数被合称一整块处理了
+    restr_inst = r"^\s*([0-9a-fA-F]*):\s*([00-9a-fA-F]{8})\s*([A-Za-z0-9]+)(?:\.([A-Za-z0-9]+))?\s*(.*?)(?://.*)?$"
+    # 用是否跳转到一个label判断是否是subproc
     restr_subproc = r"^\s*([0-9a-fA-F]{16})\s*<(.*?)>:\s*$"
 
     def __init__(self, file_path: str):
+
         self.__fpath = file_path
         self.__statements = list()
 
@@ -32,13 +37,17 @@ class AsmFileReader:
 
         re_inst = re.compile(self.restr_inst)
         re_subproc = re.compile(self.restr_subproc)
+        
         for s in statements:
+
             is_instruction = re.match(re_inst, s)
             is_subproc = re.match(re_subproc, s)
+
             if is_instruction:
                 self.__statements.append((StatementType.Instruction, is_instruction.groups()))
             elif is_subproc:
                 self.__statements.append((StatementType.SubProcedure, is_subproc.groups()))
+
         self.__statements = tuple(self.__statements)
 
     @property
