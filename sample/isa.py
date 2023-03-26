@@ -221,10 +221,7 @@ class Instruction:
                 is_bracket_upgrade = re.match(self.__ls_bracketUpdate_cpat,self.addrmode)
                 is_bracket_upgrade_aft = re.match(self.__ls_bracketUpdateAft_cpat,self.addrmode)
                 if is_bracket_upgrade_aft:
-                    print("here")
-                    print(self.tokens)
                     is_immAft = re.match(self.__ls_immeAft_cpat,self.addrmode)
-                    print(is_immAft)
                     is_regAft = re.match(self.__ls_regAft_cpat,self.addrmode)
                     is_regShiftAft = re.match(self.__ls_regShiftAft_cpat,self.addrmode)
                     if is_immAft:
