@@ -222,8 +222,23 @@ class TCfgNode:
         self.__base_proc = base_proc
         self.__instructions = tuple(instructions)
 
-        self.from_edge: List[TCfgEdge] = list()
-        self.to_edge: List[TCfgEdge] = list()
+        self.from_edge: List[TCfgEdge] = list()#from_edge是node的出边，.dst是去的点
+        self.to_edge: List[TCfgEdge] = list()#to_edge是node的入边，.src是来的节点
+
+        # 为读写分析部分增加的属性
+        self.point_other_num = 0
+        self.still_point_other_num = 0
+        self.point_self_num = 0
+        self.still_point_self_num = 0
+        self.is_head = False
+        self.is_end = False
+        self.no_point_other = False
+        self.no_point_self = False
+        self.is_in_loop = False
+
+        self.node_value = 0
+        self.edge_value = 0
+        self.loop_value = 0
 
     @property
     def name(self):
@@ -240,7 +255,51 @@ class TCfgNode:
     @property
     def instructions(self):
         return self.__instructions
+    
+    def set_rw_condition(self):
+        for i in self.from_edge:
+            self.point_other_num += 1
+        for i in self.to_edge:
+            self.point_self_num += 1
 
+        self.still_point_other_num = self.point_other_num
+        self.still_point_self_num = self.point_self_num
+
+        if self.point_self_num == 0:
+            self.is_head = True
+            self.no_point_self = True
+            self.node_value = 1
+            self.edge_value = self.node_value/self.point_other_num
+        else:
+            self.is_head = False
+
+        if self.point_other_num == 0:
+            self.is_end = True
+            self.no_point_other = True
+        else:
+            self.is_end = False
+
+    def get_rw_value(self,edge_value):
+        
+        self.node_value += edge_value
+        self.still_point_self_num -= 1
+
+        if self.still_point_self_num == 0:
+            self.no_point_self = True
+            if self.is_end:
+                pass
+            else:
+                self.edge_value = self.node_value/self.point_other_num
+    
+    def set_rw_value(self):
+        if self.no_point_other:
+            pass
+        elif self.no_point_self:
+            for i in self.from_edge:
+                i.dst.get_rw_value(self.edge_value)
+                self.still_point_other_num -= 1
+            if self.still_point_other_num == 0:
+                self.no_point_other = True
 
 class TCfgEdgeType(Enum):
     Textual = auto()
