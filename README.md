@@ -12,8 +12,10 @@
 ## CFG
 oldCFG为原来面向过程编程的版本，目前已经弃用
 
-新的面向对象的代码在newCFG下面
+新的版本暂时在sample下面，通过main.ipynb执行整个流程
 
-- readfile实现了读文件功能
-- cfg_preparation实现了，cfg_gen实现了生成CFG图的功能
-- loadStore实现了对于ls指令的分析处理功能
+- read_adm实现了文件的读取和初步处理
+- isa用于处理具体指令的分类
+- cfg用于生成图结构和绘制对应的图像
+- loadstore在cfg生成之后对相应的指令进行分析
+- rw_condition用户读写分析
