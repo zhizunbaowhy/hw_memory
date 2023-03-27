@@ -36,15 +36,15 @@ class Re_LoadStore_Operand:
     ls_reg_pat = r"((?:x|w)\d*)"
     ls_shift_pat = r"(LSL|LSR|ASR|ROR)"
     #偏移寻址
-    ls_immeOffset_pat = r"\[((?:x|w)\d*)\s*\,\s*\#(-?)((?:\d*|0x[0-9a-fA-F]*))\]"
+    ls_immeOffset_pat = r"\[((?:(?:x|w)\d*)|sp)\s*\,\s*\#(-?)((?:\d*|0x[0-9a-fA-F]*))\]"
     ls_regOffset_pat = r"\[((?:x|w)\d*)\s*\,\s*(-?)((?:x|w)\d*)\]"
     ls_regShift_pat = r"\[((?:x|w)\d*)\s*\,\s*(-?)((?:x|w)\d*)\s*\,\s*(LSL|LSR|ASR|ROR)\s*\#(-?)((?:\d*|0x[0-9a-fA-F]*))\]"
     #先更新寻址
-    ls_immeBef_pat = r"\[((?:x|w)\d*)\s*\,\s*\#(-?)((?:\d*|0x[0-9a-fA-F]*))\]!"
+    ls_immeBef_pat = r"\[((?:(?:x|w)\d*)|sp)\s*\,\s*\#(-?)((?:\d*|0x[0-9a-fA-F]*))\]!"
     ls_regBef_pat = r"\[((?:x|w)\d*)\s*\,\s*(-?)((?:x|w)\d*)\]!"
     ls_regShiftBef_pat = r"\[((?:x|w)\d*)\s*\,\s*(-?)((?:x|w)\d*)\s*\,\s*(LSL|LSR|ASR|ROR)\s*\#(-?)((?:\d*|0x[0-9a-fA-F]*))\]!"
     #后更新寻址  
-    ls_immeAft_pat = r"\[((?:x|w)\d*)\]\s*\,\s*\#(-?)((?:\d*|0x[0-9a-fA-F]*))"
+    ls_immeAft_pat = r"\[((?:(?:x|w)\d*)|sp)\]\s*\,\s*\#(-?)((?:\d*|0x[0-9a-fA-F]*))"
     ls_regAft_pat = r"\[((?:x|w)\d*)\]\s*\,\s*(-?)((?:x|w)\d*)"
     ls_regShiftAft_pat = r"\[((?:x|w)\d*)\]\s*\,\s*(-?)((?:x|w)\d*)\s*\,\s*(LSL|LSR|ASR|ROR)\s*\#(-?)((?:\d*|0x[0-9a-fA-F]*))"
 
@@ -197,6 +197,8 @@ class Instruction:
     def __load_store_identify(self):
         self.__is_ls = False
         self.__is_nsp = False#用于判断是否是sp寄存器
+        self.__ls_handle = False
+        self.__find_target = False
 
         self.__ls_first_opperand = None
         self.__ls_reg_traget = None
@@ -214,6 +216,8 @@ class Instruction:
                 # is_sp = re.match(self.__ls_sp_cpat)
                 ls_op_slip = re.match(self.__ls_split_cpat,self.tokens[4])
                 temp_op = ls_op_slip.groups()
+                self.__ls_handle = True
+
                 self.__ls_first_opperand = temp_op[0]
                 self.addrmode = temp_op[1]
 
@@ -270,8 +274,6 @@ class Instruction:
                     elif is_regShift:
                         self.__ls_addr_mode = AddrMode.RegShift
 
-
-        
     def __is_sp(self):
         re_sp = re.match(self.__ls_sp_cpat,self.__ls_reg_traget)
         if re_sp:
@@ -297,7 +299,14 @@ class Instruction:
                 self.__ls_addr_offset = -int(strOffset,16)
             else:
                 self.__ls_addr_offset = -int(strOffset)
-            
+
+    @property
+    def ls_handle(self):
+        return self.__ls_handle  
+
+    def set_find_target(self):
+        self.__find_target = True
+    
 
     @property
     def is_ls(self):
