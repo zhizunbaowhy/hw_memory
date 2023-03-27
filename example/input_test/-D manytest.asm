@@ -1,6 +1,3 @@
-manytest.out：     文件格式 elf64-littleaarch64
-
-
 Disassembly of section .interp:                                                                                  
                                                                                                                  
 0000000000400238 <.interp>:                                                                                      
