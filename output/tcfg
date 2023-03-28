@@ -1,0 +1,68 @@
+digraph TCFG {
+	n0 [label="n0
+main
+(77c,7b0)"]
+	n1 [label="n1
+main
+(7b4,7cc)"]
+	n2 [label="n2
+main
+(7d0,7d8)"]
+	n3 [label="n3
+initializerandommesh
+(7dc,7ec)"]
+	n4 [label="n4
+initializerandommesh
+(7f0,7f4)"]
+	n5 [label="n5
+initializerandommesh
+(7f8,7fc)"]
+	n6 [label="n6
+initializerandommesh
+(800,810)"]
+	n7 [label="n7
+initializerandommesh
+(814,81c)"]
+	n8 [label="n8
+initializerandommesh
+(820,828)"]
+	n9 [label="n9
+initializerandommesh
+(82c,834)"]
+	n10 [label="n10
+initializerandommesh
+(838,840)"]
+	n11 [label="n11
+initializerandommesh
+(844,84c)"]
+	n12 [label="n12
+initializerandommesh
+(850,858)"]
+	n13 [label="n13
+initializerandommesh
+(85c,868)"]
+	n14 [label="n14
+printf@plt
+(660,66c)"]
+	n15 [label="n15
+SET_FLAG
+(8ac,918)"]
+	n0 -> n3 [label=call color=purple]
+	n13 -> n1 [label=return color=purple]
+	n1 -> n14 [label=call color=purple]
+	n14 -> n2 [label=return color=purple style=dashed]
+	n3 -> n12 [color=green]
+	n4 -> n10 [color=green]
+	n5 -> n8 [color=green]
+	n6 -> n15 [label=call color=purple]
+	n15 -> n7 [label=return color=purple]
+	n7 -> n8
+	n8 -> n6 [color=green]
+	n8 -> n9 [color=red]
+	n9 -> n10
+	n10 -> n5 [color=green]
+	n10 -> n11 [color=red]
+	n11 -> n12
+	n12 -> n4 [color=green]
+	n12 -> n13 [color=red]
+}
