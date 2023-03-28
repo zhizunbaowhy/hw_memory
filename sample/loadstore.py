@@ -1,5 +1,8 @@
 from queue import Queue,LifoQueue,PriorityQueue
 
+
+
+
 class LSunit:
     def __init__(self,instr,node):
         self.__ins = instr
@@ -7,23 +10,10 @@ class LSunit:
         self.reg_traget = instr.ls_reg_traget
         self.__addr_offset = instr.ls_addr_offset
         self.findtarget = False
-        self.__is_sp = False
 
         if self.reg_traget == "sp":
             self.findtarget = True
-            self.__is_sp = True
 
-    def set_sp_true(self):
-        self.__is_sp = True
-    
-    @property
-    def is_sp(self):
-        return self.__is_sp
-    
-    @property
-    def global_addr(self):
-        pass
-    
     @property
     def ins(self):
         return self.__ins
@@ -93,9 +83,6 @@ class LSPrco:
                     if ins.is_mov:
                         if lsunit.reg_traget == ins.mov_first_opperand:
                             lsunit.reg_traget = ins.mov_target
-                            if ins.mov_target == "sp":
-                                lsunit.findtarget = True
-                                lsunit.set_sp_true()
                     if ins.is_adrp:
                         if lsunit.reg_traget == ins.adrp_first_opperand:
                             lsunit.reg_traget = ins.adrp_addr
