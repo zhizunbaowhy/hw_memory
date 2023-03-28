@@ -210,7 +210,7 @@ class Instruction:
         self.__ls_addr_mode = None
         self.__ls_first_opperand = None
         self.__ls_target_num = 1
-        self.__ls_reg_traget = None
+        self.__ls_reg_target = None
         self.__ls_reg_target_list = list()#如果需要寻找的目标寄存器超过一个，则需要启用list
         self.__ls_addr_offset = 0
         
@@ -243,9 +243,9 @@ class Instruction:
                     self.__ls_addr_mode = AddrMode.Base
                     temp = is_base.groups()
 
-                    self.__ls_reg_traget = temp[0]
+                    self.__ls_reg_target = temp[0]
 
-                    if self.__ls_reg_traget == "sp":
+                    if self.__ls_reg_target == "sp":
                         self.__is_nsp = False
                     else:
                         self.__is_nsp = True
@@ -302,16 +302,17 @@ class Instruction:
                         self.__ls_addr_mode = AddrMode.RegShift
 
     def __is_sp(self):
-        re_sp = re.match(self.__ls_sp_cpat,self.__ls_reg_traget)
+        re_sp = re.match(self.__ls_sp_cpat,self.__ls_reg_target)
         if re_sp:
             self.__is_nsp = True
+            
         
     def __immOffsetTypeProc(self,reg_target,offset_pm,offset_str):
-        self.__ls_reg_traget = reg_target
+        self.__ls_reg_target = reg_target
         pm = offset_pm
         strOffset = offset_str
 
-        if self.__ls_reg_traget == "sp":
+        if self.__ls_reg_target == "sp":
             self.__is_nsp = False
         else:
             self.__is_nsp = True
@@ -330,6 +331,10 @@ class Instruction:
     @property
     def ls_handle(self):
         return self.__ls_handle  
+    
+    @property
+    def ls_target_num(self):
+        return self.__ls_target_num  
 
     def set_find_target(self):
         self.__find_target = True
@@ -355,8 +360,12 @@ class Instruction:
         return self.__ls_first_opperand
     
     @property
-    def ls_reg_traget(self):
-        return self.__ls_reg_traget
+    def ls_reg_target(self):
+        return self.__ls_reg_target
+    
+    @property
+    def ls_reg_target_list(self):
+        return self.__ls_reg_target_list
     
     @property
     def ls_addr_offset(self):
