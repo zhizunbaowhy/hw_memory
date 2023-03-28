@@ -207,14 +207,19 @@ class Instruction:
         self.__ls_handle = False
         self.__find_target = False
 
-        self.__ls_first_opperand = None
-        self.__ls_reg_traget = None
-        self.__ls_addr_offset = 0
         self.__ls_addr_mode = None
+        self.__ls_first_opperand = None
+        self.__ls_target_num = 1
+        self.__ls_reg_traget = None
+        self.__ls_reg_target_list = list()#如果需要寻找的目标寄存器超过一个，则需要启用list
+        self.__ls_addr_offset = 0
+        
+        #final_addr会在ls分析之后设置，是可以用于交付的值
         self.__ls_final_addr = 0
 
         is_loadstore = re.match(self.__loadstore_cpat,self.__name)
         if is_loadstore:
+            print(self.tokens)
             self.__type = InstructionType.LoadStore
             self.__is_ls = True
             is_lsp = re.match(self.__lsp_cpat,self.__name)
