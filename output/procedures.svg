@@ -106,13 +106,13 @@
 <text text-anchor="middle" x="374.04" y="-230.3" font-family="Times New Roman,serif" font-size="14.00">__do_global_dtors_aux</text>
 </g>
 <!-- __do_global_dtors_aux&#45;&gt;__cxa_finalize@plt -->
-<g id="edge6" class="edge">
+<g id="edge5" class="edge">
 <title>__do_global_dtors_aux&#45;&gt;__cxa_finalize@plt</title>
 <path fill="none" stroke="black" d="M337.56,-216.94C314.8,-206.92 285.31,-193.93 260.96,-183.22"/>
 <polygon fill="black" stroke="black" points="262.48,-180.06 251.91,-179.23 259.66,-186.47 262.48,-180.06"/>
 </g>
 <!-- __do_global_dtors_aux&#45;&gt;deregister_tm_clones -->
-<g id="edge5" class="edge">
+<g id="edge6" class="edge">
 <title>__do_global_dtors_aux&#45;&gt;deregister_tm_clones</title>
 <path fill="none" stroke="black" d="M380.96,-215.7C383.98,-208.15 387.59,-199.12 390.97,-190.68"/>
 <polygon fill="black" stroke="black" points="394.17,-192.09 394.64,-181.51 387.67,-189.49 394.17,-192.09"/>

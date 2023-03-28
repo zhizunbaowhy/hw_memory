@@ -8,9 +8,10 @@
 import types
 from collections import deque
 from enum import Enum, auto
-from typing import Dict, List, Optional, Sequence, Set, Tuple
+from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
 from graphviz import Digraph
+from graphviz.dot import Dot
 
 from sample.isa import Address, Instruction
 from sample.read_asm import StatementType
@@ -218,8 +219,7 @@ class TCfgNode:
         self.__base_proc = base_proc
         self.__instructions = tuple(instructions)
 
-        self.is_loop_head = False
-        self.is_loop_exit = False
+        self.inside_loop: Optional[TCfgLoopHrchy] = None
 
         self.outgoing_edge: List[TCfgEdge] = list()
         self.incoming_edge: List[TCfgEdge] = list()
@@ -579,12 +579,18 @@ class TCfg:
                 loop_counter += 1
                 loop_list.append(loop)
 
-                """ Iterative search and build loop hierarchy. """
+                """ Iterative search. """
                 for loop in loop_list:
                     loop.father = base
                     c_nodes, c_edges = build_subgraph(loop)
-                    children = find_loops(c_nodes, c_edges, loop)
-                    loop.children = children
+                    find_loops(c_nodes, c_edges, loop)
+
+            """ Label all nodes the loop inside and build loop hierarchy. """
+            if base is not None:
+                base.children = loop_list
+            for n in nodes_considered:
+                if n.inside_loop is None:
+                    n.inside_loop = base
 
             self.__loops.extend(loop_list)
             return loop_list
