@@ -256,8 +256,6 @@ class TCfgEdge:
         self.__dst = dst
         self.__kind = kind
 
-        self.is_back_edge = False
-
     @property
     def src(self):
         return self.__src
