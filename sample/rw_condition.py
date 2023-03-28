@@ -23,10 +23,10 @@ class hw_CFG_Node:
         self.is_loop = False
 
 
-        for i in self.__self.to_edge:
+        for i in self.__self.incoming_edge:
             self.node_from.append(i.src)
             self.node_from_num += 1
-        for i in self.__self.from_edge:
+        for i in self.__self.outgoing_edge:
             self.node_to.append(i.dst)
             self.node_to_num += 1
 

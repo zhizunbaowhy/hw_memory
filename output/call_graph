@@ -1,0 +1,9 @@
+digraph "Call Graph" {
+	main
+	"main|7b0#initializerandommesh"
+	"main|7cc#printf@plt"
+	"main|7b0#initializerandommesh|810#SET_FLAG"
+	main -> "main|7b0#initializerandommesh"
+	main -> "main|7cc#printf@plt"
+	"main|7b0#initializerandommesh" -> "main|7b0#initializerandommesh|810#SET_FLAG"
+}

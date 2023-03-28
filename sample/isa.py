@@ -9,22 +9,23 @@ import re
 from enum import Enum, auto
 from typing import Sequence
 
+
 class Re_LoadStore_Ins:
-    
-    #去除地址中的0
+    # 去除地址中的0
     addr_nozero_pat = r"(0*)([1-9a-fA-F][0-9a-fA-F]*)"
     # 区分指令类型
-    loadstore_pat = r"ldr|ldp|lda|ldu|str|stp|stl|stu" 
+    loadstore_pat = r"ldr|ldp|lda|ldu|str|stp|stl|stu"
     lsp_pat = r"ldp|stp"
 
     adrp_pat = r"adrp"
     move_pat = r"mov"
 
+
 class Re_LoadStore_Operand:
-    #adrp
+    # adrp
     operand_adrp_access_pat = r"([0-9a-fA-F]*)\s*(<.*>)"
-    #ls判断流程
-    #特殊情况
+    # ls判断流程
+    # 特殊情况
     ls_split_pat = r"^\s*((?:(?:x|w)\d*)|wzr|xzr)\,\s*([\s\S]*)\s*$"
     ls_bracket_pat = r"^\[.*\]$"
     ls_bracketUpdate_pat = r"^\[.*\]!$"
@@ -35,15 +36,15 @@ class Re_LoadStore_Operand:
     ls_immOffset_pat = r"\#(?:\d*|0x[0-9a-fA-F]*)"
     ls_reg_pat = r"((?:x|w)\d*)"
     ls_shift_pat = r"(LSL|LSR|ASR|ROR)"
-    #偏移寻址
+    # 偏移寻址
     ls_immeOffset_pat = r"\[((?:x|w)\d*)\s*\,\s*\#(-?)((?:\d*|0x[0-9a-fA-F]*))\]"
     ls_regOffset_pat = r"\[((?:x|w)\d*)\s*\,\s*(-?)((?:x|w)\d*)\]"
     ls_regShift_pat = r"\[((?:x|w)\d*)\s*\,\s*(-?)((?:x|w)\d*)\s*\,\s*(LSL|LSR|ASR|ROR)\s*\#(-?)((?:\d*|0x[0-9a-fA-F]*))\]"
-    #先更新寻址
+    # 先更新寻址
     ls_immeBef_pat = r"\[((?:x|w)\d*)\s*\,\s*\#(-?)((?:\d*|0x[0-9a-fA-F]*))\]!"
     ls_regBef_pat = r"\[((?:x|w)\d*)\s*\,\s*(-?)((?:x|w)\d*)\]!"
     ls_regShiftBef_pat = r"\[((?:x|w)\d*)\s*\,\s*(-?)((?:x|w)\d*)\s*\,\s*(LSL|LSR|ASR|ROR)\s*\#(-?)((?:\d*|0x[0-9a-fA-F]*))\]!"
-    #后更新寻址  
+    # 后更新寻址
     ls_immeAft_pat = r"\[((?:x|w)\d*)\]\s*\,\s*\#(-?)((?:\d*|0x[0-9a-fA-F]*))"
     ls_regAft_pat = r"\[((?:x|w)\d*)\]\s*\,\s*(-?)((?:x|w)\d*)"
     ls_regShiftAft_pat = r"\[((?:x|w)\d*)\]\s*\,\s*(-?)((?:x|w)\d*)\s*\,\s*(LSL|LSR|ASR|ROR)\s*\#(-?)((?:\d*|0x[0-9a-fA-F]*))"
@@ -80,32 +81,31 @@ class InstructionType(Enum):
     Mov = auto()
     Unknown = auto()
 
-class AddrMode(Enum):
 
+class AddrMode(Enum):
     ImmeOffset = auto()
     RegOffset = auto()
     RegShift = auto()
 
     ImmeBef = auto()
-    RegBef= auto()
-    RegShiftBef= auto()
+    RegBef = auto()
+    RegShiftBef = auto()
 
     ImmeAft = auto()
-    RegAft= auto()
-    RegShiftAft= auto()
+    RegAft = auto()
+    RegShiftAft = auto()
 
 
 class Instruction:
     restr_b_imm_target = r"([0-9a-fA-F]+)\s*<([^+-]*?)([+-][^+-]*?)?>"
 
-
-    #编译指令
+    # 编译指令
     __loadstore_cpat = re.compile(Re_LoadStore_Ins.loadstore_pat)
     __lsp_cpat = re.compile(Re_LoadStore_Ins.lsp_pat)
 
     __adrp_cpat = re.compile(Re_LoadStore_Ins.adrp_pat)
     __move_cpat = re.compile(Re_LoadStore_Ins.move_pat)
-    #编译操作数
+    # 编译操作数
     __operand_adrp_access_cpat = re.compile(Re_LoadStore_Operand.operand_adrp_access_pat)
     __ls_split_cpat = re.compile(Re_LoadStore_Operand.ls_split_pat)
     __ls_bracket_cpat = re.compile(Re_LoadStore_Operand.ls_bracket_pat)
@@ -129,20 +129,19 @@ class Instruction:
     __ls_regShiftAft_cpat = re.compile(Re_LoadStore_Operand.ls_regShiftAft_pat)
 
     def __init__(self, tokens: Sequence[str]):
-        
+
         self.tokens = tokens
         self.__addr = Address(tokens[0])
         self.__opcode = tokens[1]
-        self.__name, self.__sub_name = tokens[2], tokens[3]#name就是指令名，subname则是例如b.eq这类
+        self.__name, self.__sub_name = tokens[2], tokens[3]  # name就是指令名，subname则是例如b.eq这类
         self.__operands = tokens[4]
-        #self.__operand = tokens[4]
+        # self.__operand = tokens[4]
         self.__type = InstructionType.Unknown
 
-
         self.__branch_identify()
-        self.__load_store_identify()
-        self.__adrp_identify()
-        self.__mov_identity()
+        # self.__load_store_identify()
+        # self.__adrp_identify()
+        # self.__mov_identity()
 
     @property
     def addr(self):
@@ -163,7 +162,7 @@ class Instruction:
     @property
     def ins_type(self):
         return self.__type
-    
+
     def __branch_identify(self):
         self.__is_b = False
         self.__b_conditional = False
@@ -196,66 +195,66 @@ class Instruction:
 
     def __load_store_identify(self):
         self.__is_ls = False
-        self.__is_nsp = False#用于判断是否是sp寄存器
+        self.__is_nsp = False  # 用于判断是否是sp寄存器
 
         self.__ls_first_opperand = None
         self.__ls_reg_traget = None
         self.__ls_addr_offset = None
         self.__ls_addr_mode = None
 
-        is_loadstore = re.match(self.__loadstore_cpat,self.__name)
+        is_loadstore = re.match(self.__loadstore_cpat, self.__name)
         if is_loadstore:
             self.__type = InstructionType.LoadStore
             self.__is_ls = True
-            is_lsp = re.match(self.__lsp_cpat,self.__name)
+            is_lsp = re.match(self.__lsp_cpat, self.__name)
             if is_lsp:
                 pass
             else:
                 # is_sp = re.match(self.__ls_sp_cpat)
-                ls_op_slip = re.match(self.__ls_split_cpat,self.tokens[4])
+                ls_op_slip = re.match(self.__ls_split_cpat, self.tokens[4])
                 temp_op = ls_op_slip.groups()
                 self.__ls_first_opperand = temp_op[0]
                 self.addrmode = temp_op[1]
 
-                is_bracket = re.match(self.__ls_bracket_cpat,self.addrmode)
-                is_bracket_upgrade = re.match(self.__ls_bracketUpdate_cpat,self.addrmode)
-                is_bracket_upgrade_aft = re.match(self.__ls_bracketUpdateAft_cpat,self.addrmode)
+                is_bracket = re.match(self.__ls_bracket_cpat, self.addrmode)
+                is_bracket_upgrade = re.match(self.__ls_bracketUpdate_cpat, self.addrmode)
+                is_bracket_upgrade_aft = re.match(self.__ls_bracketUpdateAft_cpat, self.addrmode)
                 if is_bracket_upgrade_aft:
-                    is_immAft = re.match(self.__ls_immeAft_cpat,self.addrmode)
-                    is_regAft = re.match(self.__ls_regAft_cpat,self.addrmode)
-                    is_regShiftAft = re.match(self.__ls_regShiftAft_cpat,self.addrmode)
+                    is_immAft = re.match(self.__ls_immeAft_cpat, self.addrmode)
+                    is_regAft = re.match(self.__ls_regAft_cpat, self.addrmode)
+                    is_regShiftAft = re.match(self.__ls_regShiftAft_cpat, self.addrmode)
                     if is_immAft:
                         self.__ls_addr_mode = AddrMode.ImmeAft
                         temp = is_immAft.groups()
-                        
+
                         target_reg = temp[0]
                         pm = temp[1]
                         strOffset = temp[2]
-                        self.__immOffsetTypeProc(target_reg,pm,strOffset)
+                        self.__immOffsetTypeProc(target_reg, pm, strOffset)
                     elif is_regAft:
                         self.__ls_addr_mode = AddrMode.RegAft
                     elif is_regShiftAft:
                         self.__ls_addr_mode = AddrMode.RegShiftAft
                 elif is_bracket_upgrade:
-                    is_immBef = re.match(self.__ls_immeBef_cpat,self.addrmode)
-                    is_regBef = re.match(self.__ls_regBef_cpat,self.addrmode)
-                    is_regShiftBef = re.match(self.__ls_regShiftBef_cpat,self.addrmode)
+                    is_immBef = re.match(self.__ls_immeBef_cpat, self.addrmode)
+                    is_regBef = re.match(self.__ls_regBef_cpat, self.addrmode)
+                    is_regShiftBef = re.match(self.__ls_regShiftBef_cpat, self.addrmode)
                     if is_immBef:
                         self.__ls_addr_mode = AddrMode.ImmeBef
                         temp = is_immBef.groups()
-                        
+
                         target_reg = temp[0]
                         pm = temp[1]
                         strOffset = temp[2]
-                        self.__immOffsetTypeProc(target_reg,pm,strOffset)
+                        self.__immOffsetTypeProc(target_reg, pm, strOffset)
                     elif is_regBef:
                         self.__ls_addr_mode = AddrMode.RegBef
                     elif is_regShiftBef:
                         self.__ls_addr_mode = AddrMode.RegShiftBef
                 elif is_bracket:
-                    is_immOffset = re.match(self.__ls_immeOffset_cpat,self.addrmode)
-                    is_regOffset = re.match(self.__ls_regOffset_cpat,self.addrmode)
-                    is_regShift = re.match(self.__ls_regShift_cpat,self.addrmode)
+                    is_immOffset = re.match(self.__ls_immeOffset_cpat, self.addrmode)
+                    is_regOffset = re.match(self.__ls_regOffset_cpat, self.addrmode)
+                    is_regShift = re.match(self.__ls_regShift_cpat, self.addrmode)
 
                     if is_immOffset:
                         self.__ls_addr_mode = AddrMode.ImmeOffset
@@ -264,20 +263,18 @@ class Instruction:
                         target_reg = temp[0]
                         pm = temp[1]
                         strOffset = temp[2]
-                        self.__immOffsetTypeProc(target_reg,pm,strOffset)
+                        self.__immOffsetTypeProc(target_reg, pm, strOffset)
                     elif is_regOffset:
                         self.__ls_addr_mode = AddrMode.RegOffset
                     elif is_regShift:
                         self.__ls_addr_mode = AddrMode.RegShift
 
-
-        
     def __is_sp(self):
-        re_sp = re.match(self.__ls_sp_cpat,self.__ls_reg_traget)
+        re_sp = re.match(self.__ls_sp_cpat, self.__ls_reg_traget)
         if re_sp:
             self.__is_nsp = True
-        
-    def __immOffsetTypeProc(self,reg_target,offset_pm,offset_str):
+
+    def __immOffsetTypeProc(self, reg_target, offset_pm, offset_str):
         self.__ls_reg_traget = reg_target
         pm = offset_pm
         strOffset = offset_str
@@ -286,43 +283,41 @@ class Instruction:
             self.__is_nsp = False
         else:
             self.__is_nsp = True
-        
+
         if pm == '':
             if strOffset[0:2] == "0x":
-                self.__ls_addr_offset = int(strOffset,16)
+                self.__ls_addr_offset = int(strOffset, 16)
             else:
                 self.__ls_addr_offset = int(strOffset)
         else:
             if strOffset[0:2] == "0x":
-                self.__ls_addr_offset = -int(strOffset,16)
+                self.__ls_addr_offset = -int(strOffset, 16)
             else:
                 self.__ls_addr_offset = -int(strOffset)
-            
 
     @property
     def is_ls(self):
         return self.__is_ls
-    
+
     @property
     def is_nsp(self):
         return self.__is_nsp
-    
+
     @property
     def ls_first_opperand(self):
         return self.__ls_first_opperand
-    
+
     @property
     def ls_reg_traget(self):
         return self.__ls_reg_traget
-    
+
     @property
     def ls_addr_offset(self):
         return self.__ls_addr_offset
-    
+
     @property
     def ls_addr_mode(self):
         return self.__ls_addr_mode
-    
 
     def __adrp_identify(self):
 
@@ -335,31 +330,32 @@ class Instruction:
             self.__type = InstructionType.Adrp
             self.__is_adrp = True
 
-            ls_op_slip = re.match(self.__ls_split_cpat,self.tokens[4])
+            ls_op_slip = re.match(self.__ls_split_cpat, self.tokens[4])
             temp_op = ls_op_slip.groups()
             self.__adrp_first_opperand = temp_op[0]
             addr = temp_op[1]
 
-            re_adrp_addr = re.match(self.__operand_adrp_access_cpat,addr)
+            re_adrp_addr = re.match(self.__operand_adrp_access_cpat, addr)
             temp = re_adrp_addr.groups()
             self.__adrp_addr = temp[0]
             self.__adrp_label = temp[1]
-            
+
     @property
     def is_adrp(self):
         return self.__is_adrp
-    
+
     @property
     def adrp_addr(self):
         return self.__adrp_addr
-    
+
     @property
     def adrp_label(self):
         return self.__adrp_label
-    
+
     @property
     def adrp_first_opperand(self):
         return self.__adrp_first_opperand
+
     # TODO: Add more identify functions and call them in ``__init__()``.
 
     def __mov_identity(self):
@@ -375,18 +371,15 @@ class Instruction:
 
             self.__mov_first_opperand = temp[0]
             self.__mov_target = temp[1]
-    
+
     @property
     def is_mov(self):
         return self.__is_mov
-    
+
     @property
     def mov_first_opperand(self):
         return self.__mov_first_opperand
-    
+
     @property
     def mov_target(self):
         return self.__mov_target
-
-
-
