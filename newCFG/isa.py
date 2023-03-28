@@ -26,29 +26,29 @@ class Re_LoadStore_Operand:
     operand_adrp_access_pat = r"([0-9a-fA-F]*)\s*(<.*>)"
     #ls判断流程
     #特殊情况
-    ls_split_pat = r"^\s*((?:(?:x|w|s|v|r)\d*)|wzr|xzr|sp)\,\s*([\s\S]*)\s*$"
+    ls_split_pat = r"^\s*((?:(?:x|w|s|v|r|d)\d*)|wzr|xzr|sp)\,\s*([\s\S]*)\s*$"
     ls_bracket_pat = r"^\[.*\]$"
     ls_bracketUpdate_pat = r"^\[.*\]!$"
     ls_bracketUpdateAft_pat = r"^\[.*\]\s*\,\s*(?:[\s\S]*)\s*"
     ls_bracket_sp_pat = r"\[[\s\S]*sp[\s\S]*\]"
-    ls_bracket_reg_pat = r"(\[((?:(?:x|w|s|v|r)\d*)|wzr|xzr|sp)\])"
+    ls_bracket_reg_pat = r"(\[((?:(?:x|w|s|v|r|d)\d*)|wzr|xzr|sp)\])"
     ls_sp_pat = r"(sp)"
     ls_immOffset_pat = r"\#((?:0x[0-9a-fA-F]*)|(?:\d*))"
-    ls_reg_pat = r"((?:(?:x|w|s|v|r)\d*)|wzr|xzr|sp)"
+    ls_reg_pat = r"((?:(?:x|w|s|v|r|d)\d*)|wzr|xzr|sp)"
     ls_shift_pat = r"(LSL|LSR|ASR|ROR)"
     #偏移寻址
     ls_base_pat = r"^\[((?:(?:x|w|s|v|r)\d*)|wzr|xzr|sp)\s*\]$"
-    ls_immeOffset_pat = r"\[((?:(?:x|w|s|v|r)\d*)|wzr|xzr|sp)\s*\,\s*\#(-?)((?:\d*|0x[0-9a-fA-F]*))\]"
-    ls_regOffset_pat = r"\[((?:(?:x|w|s|v|r)\d*)|wzr|xzr|sp)\s*\,\s*(-?)((?:(?:x|w|s|v|r)\d*)|wzr|xzr|sp)\]"
-    ls_regShift_pat = r"\[((?:(?:x|w|s|v|r)\d*)|wzr|xzr|sp)\s*\,\s*(-?)((?:(?:x|w|s|v|r)\d*)|wzr|xzr|sp)\s*\,\s*(LSL|LSR|ASR|ROR)\s*\#(-?)((?:\d*|0x[0-9a-fA-F]*))\]"
+    ls_immeOffset_pat = r"\[((?:(?:x|w|s|v|r|d)\d*)|wzr|xzr|sp)\s*\,\s*\#(-?)((?:\d*|0x[0-9a-fA-F]*))\]"
+    ls_regOffset_pat = r"\[((?:(?:x|w|s|v|r|d)\d*)|wzr|xzr|sp)\s*\,\s*(-?)((?:(?:x|w|s|v|r)\d*)|wzr|xzr|sp)\]"
+    ls_regShift_pat = r"\[((?:(?:x|w|s|v|r|d)\d*)|wzr|xzr|sp)\s*\,\s*(-?)((?:(?:x|w|s|v|r)\d*)|wzr|xzr|sp)\s*\,\s*(LSL|LSR|ASR|ROR)\s*\#(-?)((?:\d*|0x[0-9a-fA-F]*))\]"
     #先更新寻址
-    ls_immeBef_pat = r"\[((?:(?:x|w|s|v|r)\d*)|wzr|xzr|sp)\s*\,\s*\#(-?)((?:\d*|0x[0-9a-fA-F]*))\]!"
-    ls_regBef_pat = r"\[((?:(?:x|w|s|v|r)\d*)|wzr|xzr|sp)\s*\,\s*(-?)((?:(?:x|w|s|v|r)\d*)|wzr|xzr|sp)\]!"
-    ls_regShiftBef_pat = r"\[((?:(?:x|w|s|v|r)\d*)|wzr|xzr|sp)\s*\,\s*(-?)((?:(?:x|w|s|v|r)\d*)|wzr|xzr|sp)\s*\,\s*(LSL|LSR|ASR|ROR)\s*\#(-?)((?:\d*|0x[0-9a-fA-F]*))\]!"
+    ls_immeBef_pat = r"\[((?:(?:x|w|s|v|r|d)\d*)|wzr|xzr|sp)\s*\,\s*\#(-?)((?:\d*|0x[0-9a-fA-F]*))\]!"
+    ls_regBef_pat = r"\[((?:(?:x|w|s|v|r|d)\d*)|wzr|xzr|sp)\s*\,\s*(-?)((?:(?:x|w|s|v|r)\d*)|wzr|xzr|sp)\]!"
+    ls_regShiftBef_pat = r"\[((?:(?:x|w|s|v|r|d)\d*)|wzr|xzr|sp)\s*\,\s*(-?)((?:(?:x|w|s|v|r)\d*)|wzr|xzr|sp)\s*\,\s*(LSL|LSR|ASR|ROR)\s*\#(-?)((?:\d*|0x[0-9a-fA-F]*))\]!"
     #后更新寻址  
-    ls_immeAft_pat = r"\[((?:(?:x|w|s|v|r)\d*)|wzr|xzr|sp)\]\s*\,\s*\#(-?)((?:\d*|0x[0-9a-fA-F]*))"
-    ls_regAft_pat = r"\[((?:(?:x|w|s|v|r)\d*)|wzr|xzr|sp)\]\s*\,\s*(-?)((?:(?:x|w|s|v|r)\d*)|wzr|xzr|sp)"
-    ls_regShiftAft_pat = r"\[((?:(?:x|w|s|v|r)\d*)|wzr|xzr|sp)\]\s*\,\s*(-?)((?:(?:x|w|s|v|r)\d*)|wzr|xzr|sp)\s*\,\s*(LSL|LSR|ASR|ROR)\s*\#(-?)((?:\d*|0x[0-9a-fA-F]*))"
+    ls_immeAft_pat = r"\[((?:(?:x|w|s|v|r|d)\d*)|wzr|xzr|sp)\]\s*\,\s*\#(-?)((?:\d*|0x[0-9a-fA-F]*))"
+    ls_regAft_pat = r"\[((?:(?:x|w|s|v|r|d)\d*)|wzr|xzr|sp)\]\s*\,\s*(-?)((?:(?:x|w|s|v|r)\d*)|wzr|xzr|sp)"
+    ls_regShiftAft_pat = r"\[((?:(?:x|w|s|v|r|d)\d*)|wzr|xzr|sp)\]\s*\,\s*(-?)((?:(?:x|w|s|v|r)\d*)|wzr|xzr|sp)\s*\,\s*(LSL|LSR|ASR|ROR)\s*\#(-?)((?:\d*|0x[0-9a-fA-F]*))"
 
 
 class Address:
@@ -222,6 +222,7 @@ class Instruction:
                 pass
             else:
                 # is_sp = re.match(self.__ls_sp_cpat)
+                print(self.tokens)
                 ls_op_slip = re.match(self.__ls_split_cpat,self.tokens[4])
                 # print(self.tokens)
                 temp_op = ls_op_slip.groups()
