@@ -4,7 +4,7 @@ class LSUnit:
     def __init__(self,ins,node):
         self.__ins = ins
         self.__node = node
-        self.__addr = self.__ins.addr.val
+        self.__addr = self.__ins.addr.val()
         self.target_num = self.__ins.ls_target_num
         if self.target_num == 1:
             self.__reg_target = self.__ins.ls_reg_target
@@ -32,6 +32,7 @@ class LSUnit:
     
     def set_sp_true(self):
         self.__is_sp = True
+        self.__ins
 
     @property
     def node(self):
@@ -96,16 +97,17 @@ class LSProc:
             find_ins_self = False
 
             for ins in reversed(temp_node.instructions):
-                if ins.addr.val == lsunit.ins.addr.val:
+                if ins.addr.val() == lsunit.ins.addr.val():
                         find_ins_self = True
                         continue
                 if find_ins_self:
                     # print(ins.tokens)
                     self.__each_ins_prco(lsunit,ins)
-            if temp_node.in_num == 0:
+                    #加入判断？
+            if temp_node.in_num == 0:#这儿这么写是为了保证只有一条还是回边被处理到
                 pass
             else:
-                for e in temp_node.incoming_edge:
+                for e in temp_node.incoming_edge:#loadstore中，回边是不用处理的
                     if e.is_backEdge:
                         continue
                     else:
@@ -124,12 +126,6 @@ class LSProc:
                     if find_queue.empty():
                         break
                             
-
-
-
-
-
-
 
     def __each_ins_prco(self,lsunit,ins):
         if ins.is_mov:

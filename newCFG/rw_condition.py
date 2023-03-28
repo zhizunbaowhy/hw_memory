@@ -27,8 +27,6 @@ class RWUnit:
         self.__is_find = False
         self.__is_torrent = RWType.Unknown
 
-        self.temp_pair
-
     def add_find_cycle(self,ins,nodeValue):
         self.__find_cycle += nodeValue
         self.__find_trace.append(ins)

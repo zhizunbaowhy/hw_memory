@@ -55,7 +55,7 @@ class Address:
     def __init__(self, addr_hex: str):
         self.__hex = addr_hex
         self.__int = int(addr_hex, 16)
-
+    
     def hex_str(self):
         return self.__hex
 
@@ -219,7 +219,7 @@ class Instruction:
 
         is_loadstore = re.match(self.__loadstore_cpat,self.__name)
         if is_loadstore:
-            print(self.tokens)
+            #print(self.tokens)
             self.__type = InstructionType.LoadStore
             self.__is_ls = True
             is_lsp = re.match(self.__lsp_cpat,self.__name)
