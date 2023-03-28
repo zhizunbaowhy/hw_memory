@@ -222,7 +222,7 @@ class Instruction:
                 pass
             else:
                 # is_sp = re.match(self.__ls_sp_cpat)
-                print(self.tokens)
+                #print(self.tokens)
                 ls_op_slip = re.match(self.__ls_split_cpat,self.tokens[4])
                 # print(self.tokens)
                 temp_op = ls_op_slip.groups()

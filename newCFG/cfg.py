@@ -15,7 +15,7 @@ from graphviz.dot import Dot
 
 from newCFG.isa import Address, Instruction
 from newCFG.read_asm import StatementType
-
+import random
 
 class Procedure:
     def __init__(self, name: str, beg_addr: Address, instructions: list):
@@ -224,6 +224,21 @@ class TCfgNode:
         self.outgoing_edge: List[TCfgEdge] = list()
         self.incoming_edge: List[TCfgEdge] = list()
 
+        #读写分析和建立需要用到的数据
+        self.still_out_num = 0
+        self.out_num = 0
+        self.still_in_num = 0
+        self.in_num = 0
+        self.is_head = False
+        self.is_end = False
+        self.in_loop = False
+
+        #读写分析建立过程中需要的参数
+        self.no_out = False
+        self.no_in = False
+        self.node_value = 0
+        self.loop_time = 1
+
     @property
     def name(self):
         return self.__name
@@ -239,7 +254,69 @@ class TCfgNode:
     @property
     def instructions(self):
         return self.__instructions
+    
+    def set_rw_data(self):
+        for e in self.outgoing_edge:
+            if e.is_backEdge:
+                pass
+            else:
+                self.still_out_num += 1
+                self.out_num += 1
+        for e in self.incoming_edge:
+            if e.is_backEdge:
+                pass
+            else:
+                self.still_in_num += 1
+                self.in_num += 1
+        
+        if self.in_num == 0:
+            self.is_head = True
+            self.no_in = True
+            self.node_value = 1
+            if self.out_num == 0:#说明是单节点，没有前面也没有后面
+                for e in self.outgoing_edge:
+                    if e.is_backEdge:
+                        #设置一下吧，万一漏了啥
+                        pass
+            else:
+                for e in self.outgoing_edge:
+                    if e.is_backEdge:
+                        pass
+                    else:
+                        e.edge_value = self.node_value/self.out_num
 
+        if self.out_num == 0:
+            self.is_end = True
+            self.no_out = True
+
+    def set_rw_value(self):
+        if self.no_out:
+            pass
+        elif self.no_in:
+            for e in self.outgoing_edge:
+                if e.is_backEdge:
+                    pass
+                else:
+                    e.dst.get_rw_value(e.edge_value)
+                    self.still_out_num -= 1
+            
+            if self.still_out_num == 0:
+                self.no_out = True
+
+    def get_rw_value(self,value):
+        self.node_value += value
+        self.still_in_num -= 1
+
+        if self.still_in_num == 0:
+            self.no_in = True
+            if self.is_end:
+                pass
+            else:
+                for e in self.outgoing_edge:
+                    if e.is_backEdge:
+                        pass
+                    else:
+                        e.edge_value = self.node_value/self.out_num
 
 class TCfgEdgeType(Enum):
     Textual = auto()
@@ -255,6 +332,11 @@ class TCfgEdge:
         self.__src = src
         self.__dst = dst
         self.__kind = kind
+
+        #读写分析需要的数据
+        self.is_backEdge = False
+        self.edge_value = 0
+        self.loop_value = 0
 
     @property
     def src(self):
