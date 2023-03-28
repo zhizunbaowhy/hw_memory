@@ -13,8 +13,8 @@ from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple
 from graphviz import Digraph
 from graphviz.dot import Dot
 
-from sample.isa import Address, Instruction
-from sample.read_asm import StatementType
+from newCFG.isa import Address, Instruction
+from newCFG.read_asm import StatementType
 
 
 class Procedure:
