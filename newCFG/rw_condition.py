@@ -1,80 +1,144 @@
-import queue
+import re
+from queue import Queue
+from enum import Enum, auto
 
-class hw_CFG_Node:
-    def __init__(self,tCFGnode):
-
-        self.__self = tCFGnode
-        self.__name = tCFGnode.name
-        self.instr = tCFGnode.instructions
-        
-        self.node_from = list()#来的tcfgnode
-        self.node_to = list()#去的tcfgnode
-        self.node_from_num = 0
-        self.is_head = True
-        self.node_to_num = 0
-        self.is_end = True       
-
-        self.node_value = 0
-        self.edge_value = 0
-        self.loop_value = 0    
-
-        self.is_from = False#标识是否统计完入边，说明入边统计完了，出边那边可以放行了
-        self.is_to = False#说明出边统计完了不用再传递了
-        self.is_loop = False
-
-
-        for i in self.__self.incoming_edge:
-            self.node_from.append(i.src)
-            self.node_from_num += 1
-        for i in self.__self.outgoing_edge:
-            self.node_to.append(i.dst)
-            self.node_to_num += 1
-
-        if self.node_from_num == 0:
-            self.is_head = True
-            self.node_value = 1
-        else:
-            self.is_head = False
-        if self.node_to_num == 0:
-            self.is_end = True
-            self.edge_value = 0
-        else:
-            self.is_end = False
-        
-    @property
-    def node_self(self):
-        return self.__self
+class Re_LoadStore_Ins:
     
-    @property   
-    def name(self):
-        return self.__name
+    # 区分指令类型
+    load_pat = r"ldr" 
+    store_pat = r"str"
+
+class RWType(Enum):
+    # TODO: Add more instruction types.
+    Torrent = auto()
+    Intorrent = auto()
+    Unknown = auto()
+
+class RWUnit:
+    __load_cpat = re.compile(Re_LoadStore_Ins.load_pat)
+    __store_cpat = re.compile(Re_LoadStore_Ins.store_pat)
+
+    def __init__(self,instr,node):
+        self.__ins = instr
+        self.__node = node
+        self.__final_addr = self.__ins.final_addr
+        self.__find_cycle = 0
+        self.__find_trace = list()
+        self.__is_find = False
+        self.__is_torrent = RWType.Unknown
+
+        self.temp_pair
+
+    def add_find_cycle(self,ins,nodeValue):
+        self.__find_cycle += nodeValue
+        self.__find_trace.append(ins)
     
     @property
-    def node_get_value(self,from_edge_value):
-        self.node_value += from_edge_value
+    def find_cycle(self):
+        return self.__find_cycle
 
-class RW_Model:
-    def __init__(self,cfgObj):
-        self.tor_value = 0
-        self.intor_value = 0
-        # 将cfg_node简化成我们想要的
-        # 给每个节点把包括：从哪儿来，到哪儿去，有无loop
+    def set_torrent(self,ins_name):
+        is_load = re.match(self.__load_cpat,ins_name)
+        is_store = re.match(self.__store_cpat,ins_name)
+
+        if is_load:
+            self.__is_torrent = RWType.Torrent
+        elif is_store:
+            self.__is_torrent = RWType.Intorrent
+
+    @property
+    def ins(self):
+        return self.__ins
+    
+    @property
+    def node(self):
+        return self.__node
+    
+    @property
+    def is_torrent(self):
+        return self.__is_torrent
+    
+    @property
+    def is_find(self):
+        return self.__is_find
+    
+    def set_find(self):
+        self.__is_find = True
 
 
 
-    def backtrace():
-        #
-        pass
+class RWProc:
+    def __init__(self,ls_table):
 
-    def find_target_load_or_store(self,start,end,last_idx,target):
-        
-        # while
-        # 
-        #   idx += 1
-        #   if
-        #       
-        #       self.append[]
-        #       
-        #       break
-        
-        pass
+        self.__ls_table = ls_table
+        self.__rw_table = list()
+
+        for lsunit in self.__ls_table:
+            rw_unit = RWUnit(lsunit.ins,lsunit.node)
+            self.__rw_table.append(rw_unit)
+            
+
+            find_queue= Queue(0)
+            find_queue.put(rw_unit.node)
+            temp_node = find_queue.get()
+            if rw_unit.ins.final_addr == 0:
+                continue
+
+            find_ins_self = False
+            for ins in reversed(temp_node.instructions):
+                if ins.addr.val == rw_unit.ins.addr.val:
+                    find_ins_self = True
+                    continue
+                if find_ins_self:
+                    # print(ins.tokens)
+                    rw_unit.add_find_cycle(ins,temp_node.node_value)
+                    self.__each_ins_prco(rw_unit,ins)
+                    if rw_unit.is_find:
+                        break
+            if rw_unit.is_find:
+                continue
+            else:
+                for e in temp_node.incoming_edge:
+                    is_loop = False
+                    loop_bound = 1
+                    find_queue.put(e.src)
+                    loop_start = list()
+                    if e.is_backEdge:
+                        is_loop = True
+                        loop_start.append(e.src)
+                        loop_bound = loop_bound*e.loop_value
+                    else:
+                        pass
+                    while not rw_unit.is_find:
+                        
+                        temp_node = find_queue.get()
+
+                        for ins in reversed(temp_node.instructions):
+                            rw_unit.add_find_cycle(ins,temp_node.node_value*loop_bound)
+                            self.__each_ins_prco(rw_unit,ins)
+
+                            if rw_unit.is_find:
+                                break
+
+                        for n in loop_start:
+                            if temp_node.name == n.name:
+                                break
+                        if find_queue.empty():
+                            break
+                        for e in temp_node.incoming_edge:
+                            if e.is_backEdge:
+                                is_loop = True
+                                loop_start.append(e.src)
+                                loop_bound = loop_bound*e.loop_value
+                            else:
+                                pass 
+            
+    def __each_ins_prco(self,rwunit,ins):
+        if ins.is_ls:
+            if ins.final_addr == rwunit.ins.final_addr:
+                rwunit.set_torrent(ins.name)
+                rwunit.set_find()
+
+    @property
+    def rw_table(self):
+        return self.__rw_table     
