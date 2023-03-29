@@ -209,6 +209,7 @@ class Instruction:
         self.__find_target = False
 
         self.__ls_addr_mode = None
+        self.__ls_data_width = 32
         self.__ls_first_opperand = None
         self.__ls_target_num = 1
         self.__ls_reg_target = None
@@ -375,6 +376,10 @@ class Instruction:
     @property
     def ls_addr_mode(self):
         return self.__ls_addr_mode
+    
+    @property
+    def ls_data_width(self):
+        return self.__ls_data_width
     
 
     def __adrp_identify(self):
