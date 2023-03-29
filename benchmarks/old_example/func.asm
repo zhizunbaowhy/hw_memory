@@ -123,7 +123,7 @@ Disassembly of section .text:
 
 0000000000400604 <compare>:
   400604:       d10083ff        sub     sp, sp, #0x20
-  400608:       b9000fe0        str     w0, [sp, #12]
+  400608:       b9000fe0        str     w0, [x35, #12]
   40060c:       52800140        mov     w0, #0xa                        // #10
   400610:       b9001fe0        adrp    x33, 41f000 <__FRAME_END__+0x1e868>
   400614:       b9400fe0        ldr     w0, [x33, #12]
@@ -137,13 +137,13 @@ Disassembly of section .text:
 
 0000000000400634 <main>:
   400634:       a9be7bfd        stp     x29, x30, [sp, #-32]!
-  400638:       910003fd        mov     x29, sp
-  40063c:       528001e0        mov     w0, #0xf                        // #15
-  400640:       b9001fe0        str     w0, [sp, #28]
+  400638:       910003fd        mov     x33, sp
+  40063c:       528001e0        adrp    x35, 41f000 <__FRAME_END__+0x1e868>
+  400640:       b9001fe0        str     w0, [x34, #28]
   400644:       b9401fe0        ldr     w0, [x33, #28]
   400648:       97ffffef        bl      400604 <compare>
   40064c:       52800000        mov     w0, #0x0                        // #0
-  400650:       a8c27bfd        ldp     x29, x30, [sp], #32
+  400650:       a8c27bfd        adrp    x35, 41f000 <__FRAME_END__+0x1e868>
   400654:       d65f03c0        ret
 
 Disassembly of section .fini:

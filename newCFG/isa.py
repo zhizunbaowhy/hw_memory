@@ -17,38 +17,43 @@ class Re_LoadStore_Ins:
     loadstore_pat = r"ldr|ldp|lda|ldu|str|stp|stl|stu" 
     lsp_pat = r"ldp|stp"
 
-    adrp_pat = r"adrp"
-    move_pat = r"mov"
     add_pat = r"add|sub"
 
 class Re_LoadStore_Operand:
+    #按照类型规整过的字符串
+    reg_str = r"((?:(?:x|w|s|v|r|d)\d{1,2})|wzr|xzr|sp)"
+    spacedot = r"\s*\,\s*"
+    space = r"\s*"
+    anyword = r"(.*)"
+    immoffset_str = r"((?:[1-9]\d*)|(?:0x[0-9a-fA-F]*))"
+
+    
+    
     #adrp
     operand_adrp_access_pat = r"([0-9a-fA-F]*)\s*(<.*>)"
-    #ls判断流程
+    
     #特殊情况
-    ls_split_pat = r"^\s*((?:(?:x|w|s|v|r|d)\d*)|wzr|xzr|sp)\,\s*([\s\S]*)\s*$"
-    ls_bracket_pat = r"^\[.*\]$"
-    ls_bracketUpdate_pat = r"^\[.*\]!$"
-    ls_bracketUpdateAft_pat = r"^\[.*\]\s*\,\s*(?:[\s\S]*)\s*"
-    ls_bracket_sp_pat = r"\[[\s\S]*sp[\s\S]*\]"
-    ls_bracket_reg_pat = r"(\[((?:(?:x|w|s|v|r|d)\d*)|wzr|xzr|sp)\])"
+    ls_split_pat = space+reg_str+spacedot+anyword
+    ls_bracket_pat = r"\[.*\]"
+    ls_bracketUpdate_pat = r"\[.*\]!"
+    ls_bracketUpdateAft_pat = r"\[.*\]"+spacedot+anyword
+    #ls_bracketUpdateAft_pat = r"^\[.*\]\s*\,\s*(?:[\s\S]*)\s*"
     ls_sp_pat = r"(sp)"
-    ls_immOffset_pat = r"\#((?:0x[0-9a-fA-F]*)|(?:\d*))"
-    ls_reg_pat = r"((?:(?:x|w|s|v|r|d)\d*)|wzr|xzr|sp)"
-    ls_shift_pat = r"(LSL|LSR|ASR|ROR)"
+    ls_immOffset_pat = r"\#"+immoffset_str
+    ls_shift_pat = r"(lsl|lsr|adr|ror)"
     #偏移寻址
-    ls_base_pat = r"^\[((?:(?:x|w|s|v|r)\d*)|wzr|xzr|sp)\s*\]$"
-    ls_immeOffset_pat = r"\[((?:(?:x|w|s|v|r|d)\d*)|wzr|xzr|sp)\s*\,\s*\#(-?)((?:\d*|0x[0-9a-fA-F]*))\]"
-    ls_regOffset_pat = r"\[((?:(?:x|w|s|v|r|d)\d*)|wzr|xzr|sp)\s*\,\s*(-?)((?:(?:x|w|s|v|r)\d*)|wzr|xzr|sp)\]"
-    ls_regShift_pat = r"\[((?:(?:x|w|s|v|r|d)\d*)|wzr|xzr|sp)\s*\,\s*(-?)((?:(?:x|w|s|v|r)\d*)|wzr|xzr|sp)\s*\,\s*(LSL|LSR|ASR|ROR)\s*\#(-?)((?:\d*|0x[0-9a-fA-F]*))\]"
+    ls_base_pat = r"^\["+reg_str+r"\]$"
+    ls_immeOffset_pat = r"\["+reg_str+spacedot+r"\#(-?)"+immoffset_str+r"\]"
+    ls_regOffset_pat = r"\["+reg_str+spacedot+r"(-?)"+reg_str+r"\]"
+    ls_regShift_pat = r"\["+reg_str+spacedot+r"(-?)"+reg_str+spacedot+ls_shift_pat+r"\s*\#(-?)"+immoffset_str+r"\]"
     #先更新寻址
-    ls_immeBef_pat = r"\[((?:(?:x|w|s|v|r|d)\d*)|wzr|xzr|sp)\s*\,\s*\#(-?)((?:\d*|0x[0-9a-fA-F]*))\]!"
-    ls_regBef_pat = r"\[((?:(?:x|w|s|v|r|d)\d*)|wzr|xzr|sp)\s*\,\s*(-?)((?:(?:x|w|s|v|r)\d*)|wzr|xzr|sp)\]!"
-    ls_regShiftBef_pat = r"\[((?:(?:x|w|s|v|r|d)\d*)|wzr|xzr|sp)\s*\,\s*(-?)((?:(?:x|w|s|v|r)\d*)|wzr|xzr|sp)\s*\,\s*(LSL|LSR|ASR|ROR)\s*\#(-?)((?:\d*|0x[0-9a-fA-F]*))\]!"
+    ls_immeBef_pat = r"\["+reg_str+spacedot+r"\#(-?)"+immoffset_str+r"\]!"
+    ls_regBef_pat = r"\["+reg_str+spacedot+r"(-?)"+reg_str+r"\]!"
+    ls_regShiftBef_pat = r"\["+reg_str+spacedot+r"(-?)"+reg_str+spacedot+ls_shift_pat+r"\s*\#(-?)"+immoffset_str+r"\]!"
     #后更新寻址  
-    ls_immeAft_pat = r"\[((?:(?:x|w|s|v|r|d)\d*)|wzr|xzr|sp)\]\s*\,\s*\#(-?)((?:\d*|0x[0-9a-fA-F]*))"
-    ls_regAft_pat = r"\[((?:(?:x|w|s|v|r|d)\d*)|wzr|xzr|sp)\]\s*\,\s*(-?)((?:(?:x|w|s|v|r)\d*)|wzr|xzr|sp)"
-    ls_regShiftAft_pat = r"\[((?:(?:x|w|s|v|r|d)\d*)|wzr|xzr|sp)\]\s*\,\s*(-?)((?:(?:x|w|s|v|r)\d*)|wzr|xzr|sp)\s*\,\s*(LSL|LSR|ASR|ROR)\s*\#(-?)((?:\d*|0x[0-9a-fA-F]*))"
+    ls_immeAft_pat = r"\["+reg_str+r"\]"+spacedot+r"\#(-?)"+immoffset_str
+    ls_regAft_pat = r"\["+reg_str+r"\]"+spacedot+r"(-?)"+reg_str
+    ls_regShiftAft_pat = r"\["+reg_str+r"\]"+spacedot+r"(-?)"+reg_str+spacedot+ls_shift_pat+r"\s*\#(-?)"+immoffset_str
 
 
 class Address:
@@ -107,8 +112,7 @@ class Instruction:
     __loadstore_cpat = re.compile(Re_LoadStore_Ins.loadstore_pat)
     __lsp_cpat = re.compile(Re_LoadStore_Ins.lsp_pat)
 
-    __adrp_cpat = re.compile(Re_LoadStore_Ins.adrp_pat)
-    __move_cpat = re.compile(Re_LoadStore_Ins.move_pat)
+
     __add_cpat = re.compile(Re_LoadStore_Ins.add_pat)
     #编译操作数
     __operand_adrp_access_cpat = re.compile(Re_LoadStore_Operand.operand_adrp_access_pat)
@@ -116,11 +120,8 @@ class Instruction:
     __ls_bracket_cpat = re.compile(Re_LoadStore_Operand.ls_bracket_pat)
     __ls_bracketUpdate_cpat = re.compile(Re_LoadStore_Operand.ls_bracketUpdate_pat)
     __ls_bracketUpdateAft_cpat = re.compile(Re_LoadStore_Operand.ls_bracketUpdateAft_pat)
-    __ls_bracket_sp_cpat = re.compile(Re_LoadStore_Operand.ls_bracket_sp_pat)
-    __ls_bracket_reg_cpat = re.compile(Re_LoadStore_Operand.ls_bracket_reg_pat)
     __ls_sp_cpat = re.compile(Re_LoadStore_Operand.ls_sp_pat)
     __ls_immOffset_cpat = re.compile(Re_LoadStore_Operand.ls_immOffset_pat)
-    __ls_reg_cpat = re.compile(Re_LoadStore_Operand.ls_reg_pat)
     __ls_shift_cpat = re.compile(Re_LoadStore_Operand.ls_shift_pat)
 
     __ls_base_cpat = re.compile(Re_LoadStore_Operand.ls_base_pat)
@@ -391,7 +392,6 @@ class Instruction:
             temp_op = ls_op_slip.groups()
             self.__adrp_first_opperand = temp_op[0]
             addr = temp_op[1]
-
             re_adrp_addr = re.match(self.__operand_adrp_access_cpat,addr)
             temp = re_adrp_addr.groups()
             self.__adrp_addr = temp[0]
