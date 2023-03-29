@@ -239,6 +239,10 @@ class TCfgNode:
         self.node_value = 0
         self.loop_time = 1
 
+        #热度分析需要的草书
+        self.loadlist = list()
+        self.storelist = list()
+
     @property
     def name(self):
         return self.__name
