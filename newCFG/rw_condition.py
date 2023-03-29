@@ -10,8 +10,10 @@ class Re_LoadStore_Ins:
 
 class RWType(Enum):
     # TODO: Add more instruction types.
-    Tolerant = auto()
-    Intolerant = auto()
+    Global_Tolerant = auto()
+    Global_Intolerant = auto()
+    Local_Tolerant = auto()
+    Local_Intolernt = auto()
     Unknown = auto()
 
 class RWUnit:
@@ -40,9 +42,9 @@ class RWUnit:
         is_store = re.match(self.__store_cpat,ins_name)
 
         if is_load:
-            self.__is_torrent = RWType.Tolerant
+            self.__is_torrent = RWType.Global_Tolerant
         elif is_store:
-            self.__is_torrent = RWType.Intolerant
+            self.__is_torrent = RWType.Global_Intolerant
 
     @property
     def ins(self):

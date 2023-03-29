@@ -26,8 +26,8 @@ digraph "Procedure Graph" {
 	__do_global_dtors_aux -> "__cxa_finalize@plt"
 	__do_global_dtors_aux -> deregister_tm_clones
 	frame_dummy -> register_tm_clones
-	main -> "printf@plt"
 	main -> initializerandommesh
+	main -> "printf@plt"
 	initializerandommesh -> SET_FLAG
 	__libc_csu_init -> _init
 }
