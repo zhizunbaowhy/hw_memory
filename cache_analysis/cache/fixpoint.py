@@ -4,9 +4,9 @@ from copy import deepcopy
 from enum import Enum, auto
 from functools import reduce
 from typing import Hashable, Sequence, Dict, List, Callable
-from samples.abstract_states import CacheSetState, must_join, may_join, persistent_join, \
+from cache_analysis.cache.abstract_states import CacheSetState, must_join, may_join, persistent_join, \
     state_equal, must_update, may_update, persistent_update
-from samples.frontend import CacheConfig, MemoryBlock
+from cache_analysis.cache.frontend import CacheConfig, MemoryBlock
 
 
 class FixpointNode:
