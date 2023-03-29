@@ -242,6 +242,8 @@ class TCfgNode:
         #热度分析需要的草书
         self.loadlist = list()
         self.storelist = list()
+        self.heat_ld_result=dict()  
+        self.heat_st_result=dict()     #储存着所有的地址对应的次数
 
     @property
     def name(self):
@@ -362,6 +364,8 @@ class TCfgLoop:
         self.__tail: TCfgNode = tail
         self.__back_edge: TCfgEdge = back_edge
         self.__all_nodes: frozenset[TCfgNode] = frozenset(all_nodes)
+        self.loop_ld_heat=dict()
+        self.loop_st_heat=dict()
 
     @property
     def name(self):
