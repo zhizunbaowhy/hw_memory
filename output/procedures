@@ -20,14 +20,14 @@ digraph "Procedure Graph" {
 	__libc_csu_fini
 	_fini
 	_init -> call_weak_fn
-	_start -> "abort@plt"
 	_start -> "__libc_start_main@plt"
+	_start -> "abort@plt"
 	call_weak_fn -> "__gmon_start__@plt"
-	__do_global_dtors_aux -> "__cxa_finalize@plt"
 	__do_global_dtors_aux -> deregister_tm_clones
+	__do_global_dtors_aux -> "__cxa_finalize@plt"
 	frame_dummy -> register_tm_clones
-	main -> initializerandommesh
 	main -> "printf@plt"
+	main -> initializerandommesh
 	initializerandommesh -> SET_FLAG
 	__libc_csu_init -> _init
 }

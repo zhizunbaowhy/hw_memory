@@ -24,11 +24,11 @@ class BssReader:
             is__data_detail = re.match(r"\s*([0-9a-fA-F]*)\:\s*([0-9a-fA-F]*)\s*(\S*)\s*(.*)",s)
 
             if is__section_data:
-                self.data_section.append("data_section_head")
+                self.data_section.append("this is data_section_head")
                 data_section_start = True
                 bss_section_start = False
             elif is__section_bss:
-                self.data_section.append("bss_section_head")
+                self.data_section.append("this is bss_section_head")
                 bss_section_start = True
                 data_section_start = False
             elif is__section_other:
