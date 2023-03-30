@@ -74,23 +74,24 @@ class RWProc:
         self.__rw_table = list()
 
         for lsunit in self.__ls_table:
+
             rw_unit = RWUnit(lsunit.ins,lsunit.node)
             self.__rw_table.append(rw_unit)
-            
 
             find_queue= Queue(0)
             find_queue.put(rw_unit.node)
             temp_node = find_queue.get()
-            if rw_unit.ins.final_addr == 0:
+            
+            if lsunit.is_sp:
                 continue
 
             find_ins_self = False
+
             for ins in reversed(temp_node.instructions):
-                if ins.addr.val == rw_unit.ins.addr.val:
+                if ins.addr.val() == rw_unit.ins.addr.val():
                     find_ins_self = True
                     continue
                 if find_ins_self:
-                    # print(ins.tokens)
                     rw_unit.add_find_cycle(ins,temp_node.node_value)
                     self.__each_ins_prco(rw_unit,ins)
                     if rw_unit.is_find:
