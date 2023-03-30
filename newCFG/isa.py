@@ -403,10 +403,10 @@ class Instruction:
         self.__ls_final_addr = num
 
     @property
-    def global_offset(self):
+    def local_offset(self):
         return self.__ls_local_offset
     
-    def set_global_offset(self,num):
+    def set_local_offset(self,num):
         self.__ls_local_offset = num
 
     def __adrp_identify(self):

@@ -1,23 +1,41 @@
 from queue import Queue
 
 class LSUnit:
+
     def __init__(self,ins,node):
         self.__ins = ins
         self.__node = node
         self.__addr = self.__ins.addr.val()
+        
         self.target_num = self.__ins.ls_target_num
         if self.target_num == 1:
             self.__reg_target = self.__ins.ls_reg_target
         else:
             self.__reg_target_list = self.ins.ls_reg_target_list
+        
+
         self.__addr_offset = self.__ins.ls_addr_offset
         self.__is_find = False
-        self.__is_sp = False
         self.__final_addr = 0
-
+        self.__is_sp = False
+        self.__local_offset = 0
+        
         if self.__reg_target == "sp":
             self.__is_find = True
             self.__is_sp = True
+            self.__local_offset = self.__ins.local_offset
+    
+    @property
+    def ins(self):
+        return self.__ins
+    
+    @property
+    def ins_addr(self):
+        return self.__addr
+    
+    @property
+    def node(self):
+        return self.__node
 
     @property
     def is_find(self):
@@ -35,10 +53,6 @@ class LSUnit:
         self.__ins
 
     @property
-    def node(self):
-        return self.__node
-    
-    @property
     def reg_target(self):
         return self.__reg_target
     
@@ -46,7 +60,15 @@ class LSUnit:
         self.__reg_target = addr
 
     @property
+    def addr_offset(self):
+        return self.__addr_offset
+
+    def add_addr_offset(self,num):
+        self.__addr_offset += num
+
+    @property
     def final_addr(self):
+        #给全局用的
         if self.__is_find:
             if self.__is_sp:
                 pass
@@ -58,28 +80,22 @@ class LSUnit:
         return self.__final_addr
     
     @property
-    def ins(self):
-        return self.__ins
-    
-    @property
-    def ins_addr(self):
-        return self.__addr
-    
-    @property
-    def node(self):
-        return self.__node
-    
-    @property
-    def addr_offset(self):
-        return self.__addr_offset
-
-    def add_addr_offset(self,num):
-        self.__addr_offset += num
+    def local_offset(self):
+        #给sp用的局部偏移
+        if self.__is_find:
+            if self.__is_sp:
+                self.__local_offset = self.__addr_offset
+                
+        self.__ins.set_local_offset(self.__local_offset)
+        return self.__local_offset
 
 class LSProc:
+
     def __init__(self,cfg_list):
+
         self.__tcfg_nodes = cfg_list
         self.__ls_table = list()
+
 
         for node in self.__tcfg_nodes:
             for ins in node.instructions:
@@ -89,6 +105,12 @@ class LSProc:
         
 
         for lsunit in self.__ls_table:
+            
+            #目标寄存器就是sp的就直接跳出了，不用处理
+            if lsunit.is_sp:
+                lsunit.set_is_find()
+                lsunit.local_offset
+                continue
 
             find_queue= Queue(0)
             find_queue.put(lsunit.node)
@@ -98,17 +120,21 @@ class LSProc:
 
             for ins in reversed(temp_node.instructions):
                 if ins.addr.val() == lsunit.ins.addr.val():
-                        find_ins_self = True
-                        continue
+                    find_ins_self = True
+                    continue
                 if find_ins_self:
                     # print(ins.tokens)
                     self.__each_ins_prco(lsunit,ins)
-                    #加入判断？
-            if temp_node.in_num == 0:#这儿这么写是为了保证只有一条还是回边被处理到
+                    if lsunit.is_find:
+                        break
+            if lsunit.is_sp:#这个是为了阻止进入下一个node，因为sp暂时只在本node分析
+                lsunit.local_offset
+                continue
+            elif temp_node.in_num == 0:#这么写是让只有一条还是回边被处理到，虽然不知道有没有这种东西
                 pass
             else:
-                for e in temp_node.incoming_edge:#loadstore中，回边是不用处理的
-                    if e.is_backEdge:
+                for e in temp_node.incoming_edge:
+                    if e.is_backEdge:#loadstore中，回边是不用处理的
                         continue
                     else:
                         find_queue.put(e.src)
@@ -123,6 +149,11 @@ class LSProc:
                     
                     for ins in reversed(temp_node.instructions):
                         self.__each_ins_prco(lsunit,ins)
+                        if lsunit.is_find:
+                            break
+                    if lsunit.is_sp:
+                        lsunit.local_offset
+                        break
                     if find_queue.empty():
                         break
                             
