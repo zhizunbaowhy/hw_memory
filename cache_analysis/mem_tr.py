@@ -166,6 +166,7 @@ for n in range(len(mem_ls)):
 
 
 print(mem_head)
+# cache分析所需要的memory node信息
 print(mem_node)
 # print(tcfg_nodes.instructions)
 
@@ -175,6 +176,8 @@ for item in mem_head:
     key = item[0]
     if key not in result:
         result[key] = []
+    # TODO 预想的是 这边mem_head中会从（mem_ls会从load and store那里获取长度属性）然后将其添加到mem_ls 变成类似 ['n0', 1920, 1920, 4] 4即为长度 然后直接加长度即可 item[2]+item[3]
+    # TODO 这里item[3]如果是寄存器 比如这里用-1记录, 或用特定的值(不可能是长度的值)比如 3; 提前判断:如果是寄存器,则从另一个获得长度的list中替换item[3]
     if item[1] == item[2]:
         result[key].append((item[1], item[2]+4))
     else:
@@ -183,12 +186,12 @@ for item in mem_head:
 
 for key in result:
     result[key] = tuple(result[key])
-
+# cache分析所需要memory trace信息
 print(result)
 
 mem_edge = []
 for i in tcfg_edges:
     # print(i.src.name, i.dst.name)
     mem_edge.append((i.src.name,i.dst.name))
-
+# cache分析所需要的边信息 node--->node 有向边
 print(mem_edge)
