@@ -218,40 +218,47 @@ class Instruction:
         
         #final_addr会在ls分析之后设置，是可以用于交付的值
         self.__ls_final_addr = 0
+        self.__ls_local_offset = 0
 
         is_loadstore = re.match(self.__loadstore_cpat,self.__name)
         if is_loadstore:
+
             #print(self.tokens)
             self.__type = InstructionType.LoadStore
             self.__is_ls = True
+            
+            #TODO: LSP处理流程
             is_lsp = re.match(self.__lsp_cpat,self.__name)
             if is_lsp:
                 pass
+
             else:
-                # is_sp = re.match(self.__ls_sp_cpat)
                 #print(self.tokens)
-                ls_op_slip = re.match(self.__ls_split_cpat,self.tokens[4])
-                # print(self.tokens)
-                temp_op = ls_op_slip.groups()
                 self.__ls_handle = True
 
+                ls_op_slip = re.match(self.__ls_split_cpat,self.tokens[4])
+                temp_op = ls_op_slip.groups()
                 self.__ls_first_opperand = temp_op[0]
                 self.addrmode = temp_op[1]
+
                 is_base = re.match(self.__ls_base_cpat,self.addrmode)
                 is_bracket = re.match(self.__ls_bracket_cpat,self.addrmode)
                 is_bracket_upgrade = re.match(self.__ls_bracketUpdate_cpat,self.addrmode)
                 is_bracket_upgrade_aft = re.match(self.__ls_bracketUpdateAft_cpat,self.addrmode)
+                
                 if is_base:
                     self.__ls_addr_mode = AddrMode.Base
-                    temp = is_base.groups()
 
+                    temp = is_base.groups()
                     self.__ls_reg_target = temp[0]
 
                     if self.__ls_reg_target == "sp":
                         self.__is_nsp = False
+                        self.__ls_local_offset = 0#说明是真的没有偏移
                     else:
                         self.__is_nsp = True
-                if is_bracket_upgrade_aft:
+                
+                elif is_bracket_upgrade_aft:
                     
                     is_immAft = re.match(self.__ls_immeAft_cpat,self.addrmode)
                     is_regAft = re.match(self.__ls_regAft_cpat,self.addrmode)
@@ -259,52 +266,66 @@ class Instruction:
                     
                     if is_immAft:
                         self.__ls_addr_mode = AddrMode.ImmeAft
+
                         temp = is_immAft.groups()
-                        
                         target_reg = temp[0]
                         pm = temp[1]
                         strOffset = temp[2]
+
                         self.__immOffsetTypeProc(target_reg,pm,strOffset)
+                    
                     elif is_regAft:
                         self.__ls_addr_mode = AddrMode.RegAft
+                    
                     elif is_regShiftAft:
                         self.__ls_addr_mode = AddrMode.RegShiftAft
+                
                 elif is_bracket_upgrade:
+
                     is_immBef = re.match(self.__ls_immeBef_cpat,self.addrmode)
                     is_regBef = re.match(self.__ls_regBef_cpat,self.addrmode)
                     is_regShiftBef = re.match(self.__ls_regShiftBef_cpat,self.addrmode)
+
                     if is_immBef:
                         self.__ls_addr_mode = AddrMode.ImmeBef
+
                         temp = is_immBef.groups()
-                        
                         target_reg = temp[0]
                         pm = temp[1]
                         strOffset = temp[2]
+
                         self.__immOffsetTypeProc(target_reg,pm,strOffset)
+
                     elif is_regBef:
                         self.__ls_addr_mode = AddrMode.RegBef
+
                     elif is_regShiftBef:
                         self.__ls_addr_mode = AddrMode.RegShiftBef
+                
                 elif is_bracket:
+
                     is_immOffset = re.match(self.__ls_immeOffset_cpat,self.addrmode)
                     is_regOffset = re.match(self.__ls_regOffset_cpat,self.addrmode)
                     is_regShift = re.match(self.__ls_regShift_cpat,self.addrmode)
 
                     if is_immOffset:
                         self.__ls_addr_mode = AddrMode.ImmeOffset
-                        temp = is_immOffset.groups()
 
+                        temp = is_immOffset.groups()
                         target_reg = temp[0]
                         pm = temp[1]
                         strOffset = temp[2]
+
                         self.__immOffsetTypeProc(target_reg,pm,strOffset)
+
                     elif is_regOffset:
                         self.__ls_addr_mode = AddrMode.RegOffset
+
                     elif is_regShift:
                         self.__ls_addr_mode = AddrMode.RegShift
 
-    def __is_sp(self):
-        re_sp = re.match(self.__ls_sp_cpat,self.__ls_reg_target)
+    def __is_sp(self,matchworld):
+        re_sp = re.match(self.__ls_sp_cpat,matchworld)
         if re_sp:
             self.__is_nsp = True
             
@@ -314,11 +335,6 @@ class Instruction:
         pm = offset_pm
         strOffset = offset_str
 
-        if self.__ls_reg_target == "sp":
-            self.__is_nsp = False
-        else:
-            self.__is_nsp = True
-        
         if pm == '':
             if strOffset[0:2] == "0x":
                 self.__ls_addr_offset = int(strOffset,16)
@@ -330,24 +346,11 @@ class Instruction:
             else:
                 self.__ls_addr_offset = -int(strOffset)
 
-    @property
-    def ls_handle(self):
-        return self.__ls_handle  
-    
-    @property
-    def ls_target_num(self):
-        return self.__ls_target_num  
-
-    def set_find_target(self):
-        self.__find_target = True
-    
-
-    @property
-    def final_addr(self):
-        return self.__ls_final_addr
-    
-    def set_final_addr(self,num):
-        self.__ls_final_addr = num
+        if self.__ls_reg_target == "sp":
+            self.__is_nsp = False
+            self.__ls_local_offset += self.__ls_addr_offset
+        else:
+            self.__is_nsp = True
 
     @property
     def is_ls(self):
@@ -356,11 +359,30 @@ class Instruction:
     @property
     def is_nsp(self):
         return self.__is_nsp
+
+    @property
+    def ls_handle(self):
+        return self.__ls_handle  
+    
+    def set_find_target(self):
+        self.__find_target = True
+
+    @property
+    def ls_addr_mode(self):
+        return self.__ls_addr_mode
+    
+    @property
+    def ls_data_width(self):
+        return self.__ls_data_width
     
     @property
     def ls_first_opperand(self):
         return self.__ls_first_opperand
-    
+
+    @property
+    def ls_target_num(self):
+        return self.__ls_target_num
+      
     @property
     def ls_reg_target(self):
         return self.__ls_reg_target
@@ -374,13 +396,18 @@ class Instruction:
         return self.__ls_addr_offset
     
     @property
-    def ls_addr_mode(self):
-        return self.__ls_addr_mode
+    def final_addr(self):
+        return self.__ls_final_addr
     
+    def set_final_addr(self,num):
+        self.__ls_final_addr = num
+
     @property
-    def ls_data_width(self):
-        return self.__ls_data_width
+    def global_offset(self):
+        return self.__ls_local_offset
     
+    def set_global_offset(self,num):
+        self.__ls_local_offset = num
 
     def __adrp_identify(self):
 
@@ -397,6 +424,7 @@ class Instruction:
             temp_op = ls_op_slip.groups()
             self.__adrp_first_opperand = temp_op[0]
             addr = temp_op[1]
+
             re_adrp_addr = re.match(self.__operand_adrp_access_cpat,addr)
             temp = re_adrp_addr.groups()
             self.__adrp_addr = temp[0]
@@ -417,7 +445,6 @@ class Instruction:
     @property
     def adrp_first_opperand(self):
         return self.__adrp_first_opperand
-    # TODO: Add more identify functions and call them in ``__init__()``.
 
     def __mov_identity(self):
 
@@ -428,8 +455,8 @@ class Instruction:
         if self.__name in ('mov'):
             self.__type = InstructionType.Mov
             self.__is_mov = True
-            temp = [o.strip() for o in self.tokens[4].split(',')]
 
+            temp = [o.strip() for o in self.tokens[4].split(',')]
             self.__mov_first_opperand = temp[0]
             self.__mov_target = temp[1]
     
@@ -459,21 +486,17 @@ class Instruction:
             self.__is_add = True
 
             temp = [o.strip() for o in self.tokens[4].split(',')]
-
             self.__add_1op = temp[0]
             self.__add_2op = temp[1]
             self.__add_3op = temp[2]
 
             if self.__add_1op == self.__add_2op:
                 self.__add_same = True
+
                 re_imm = re.match(self.__ls_immOffset_cpat,self.__add_3op)
-                
-                # print(self.__add_3op )
                 if re_imm:
                     temp = re_imm.groups()[0]
-                    # print(temp)
                     if temp[0:2] == "0x":
-                        # print(self.tokens)
                         self.__add_3op = int(temp,16)
                     else:
                         self.__add_3op = int(temp)
