@@ -1,4 +1,5 @@
-fp = r"D:\workspace\Gitdocuments\hw-memory\benchmarks\spec_example\spec2006_470.lbm\lbm_part.asm"
+# fp = r"D:\workspace\Gitdocuments\hw-memory\benchmarks\spec_example\spec2006_470.lbm\lbm_part.asm"
+fp = r"C:\Users\51777\Desktop\华为memory\test\objdump\-dmanytest.asm"
 
 from newCFG.cfg import proc_identify
 from newCFG.isa import Instruction, AddrMode
