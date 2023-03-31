@@ -1,4 +1,6 @@
 # fp = r"D:\workspace\Gitdocuments\hw-memory\benchmarks\spec_example\spec2006_470.lbm\lbm_part.asm"
+from cache_analysis import read_segment
+
 fp = r"C:\Users\51777\Desktop\华为memory\test\objdump\-dmanytest.asm"
 
 from newCFG.cfg import proc_identify
@@ -7,6 +9,7 @@ from typing import Tuple
 from newCFG.read_asm import AsmFileReader, StatementType
 from graphviz import Digraph
 from newCFG.cfg import draw_proc, find_cycle, has_cycle, proc_draw_edges
+from read_segment import segmentReader
 
 reader = AsmFileReader(fp)
 
@@ -176,6 +179,15 @@ for n in range(len(mem_ls)):
 print(mem_head)
 # cache分析所需要的memory node信息
 print(mem_node)
+
+# 在这里提前获得.bss & .data segment信息
+segment = segmentReader(r'C:\Users\51777\Desktop\华为memory\test\objdump\-D manytest.asm')
+bss = segment.getbss()
+data = segment.getdata()
+# 将.bss 和 .data 合成一个 一般是.data 在前面
+ALL = []
+for i in bss:
+    ALL.append(bss)
 
 # 对于同一node 如果前后地址一致，则append tuple(start,end); 前后地址不一致说明是l/s指令，则append tuple(start,start), tuple(end,end)
 # 这里的tuple(end,end) 应该是tuple(end,end+len) len单独一个list传进来，根据指令长度决定，如果是寄存器则通过寻找segement确定 先默认长度为4
