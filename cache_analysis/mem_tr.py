@@ -129,7 +129,7 @@ lds_table = lsproc.ls_table
 
 for i in lds_table:
     print("node", i.node.name, "指令", i.ins.tokens, "是否是SP", i.is_sp, "指令地址", i.ins.addr.val(), "访存地址",
-          i.final_addr)
+          i.final_addr, "数据宽度", i.ins.ls_data_width)
 
 rwproc = RWProc(lds_table)
 
@@ -141,8 +141,8 @@ rwproc = RWProc(lds_table)
 mem_ls = []
 for i in lds_table:
     if i.is_sp is False:
-        # node + address(string) + address(int) + load/store address(int)
-        mem_ls.append([i.node.name] + [i.ins.tokens[0]] + [i.ins.addr.val()] + [i.final_addr])
+        # node + address(string) + address(int) + load/store address(int) + data width(Byte=bit/8)
+        mem_ls.append([i.node.name] + [i.ins.tokens[0]] + [i.ins.addr.val()] + [i.final_addr] + [int(i.ins.ls_data_width/8)])
 print(mem_ls)
 # print(mem_ls[0][2])
 
