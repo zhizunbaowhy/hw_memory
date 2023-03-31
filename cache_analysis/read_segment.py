@@ -5,6 +5,7 @@
 import re
 
 class segmentReader:
+
     def __init__(self, fp):
         self.__fpath = fp
 
@@ -27,14 +28,14 @@ class segmentReader:
 
             # 将元组转换为列表，并输出结果
             result1 = [list(match) for match in matches]
-            print(result1)
+            # print(result1)
         else:
             print("No match found")
 
 
         # ------------------------------------------------------------------------------------------------
         # 仅对.bss segment而言: 考虑从下一个的头来找尾部,且如果是最后一个 尾部默认加4
-        # TODO 对于非尾部 按照新逻辑 左闭右开 第 i个变量的尾就是第 (i+1)个变量的头
+        # 对于非尾部 按照新逻辑 左闭右开 第 i个变量的尾就是第 (i+1)个变量的头
         for i in range(len(result1)-1):
 
             hex_int = int(result1[i][0], 16)
@@ -69,7 +70,8 @@ class segmentReader:
         # result1_segment.append(result1[-1])
 
         # print(result1_segment)
-        print(result1)
+        # print(result1)
+        return result1
 
 
 
@@ -88,12 +90,12 @@ class segmentReader:
 
             # 将元组转换为列表，并输出结果
             result2 = [[match[0], match[1].strip()] for match in matches]
-            print(result2)
+            # print(result2)
         else:
             print("No match found")
 
         # ------------------------------------------------------------------------------------------------
-        # TODO 对于非尾部 按照新逻辑 左闭右开 第 i个变量的尾就是第 (i+1)个变量的头
+        # 对于非尾部 按照新逻辑 左闭右开 第 i个变量的尾就是第 (i+1)个变量的头
         # 和 .bss segment 同理
         for i in range(len(result2)-1):
 
@@ -116,12 +118,14 @@ class segmentReader:
         result2[-1].append(last_hex_int2 + 4)
 
         # print(self.bss_segment)
-        print(result2)
+        # print(result2)
+        return result2
 
 
 
 
-
-bread = segmentReader(r'C:\Users\51777\Desktop\华为memory\test\objdump\-D manytest.asm')
-bread.getbss()
-bread.getdata()
+# segment = segmentReader(r'C:\Users\51777\Desktop\华为memory\test\objdump\-D manytest.asm')
+# segment.getbss()
+# bss = segment.getbss()
+# data = segment.getdata()
+# print(bss,'\n',data)
