@@ -83,7 +83,11 @@ class loop_heat:
 
 
 
-
+# from cache_analysis.read_segment import segmentReader
+# from newCFG.heat_analysis import loop_heat
+# bread = segmentReader(r'C:\Users\13377\Desktop\hw-memory-master (1)\hw-memory-master\benchmarks\objdump-D\-D manytest.asm')
+# test=loop_heat(tcfg,lsproc,bread)
+# test.loop_heat_analysis()
 
 
 
