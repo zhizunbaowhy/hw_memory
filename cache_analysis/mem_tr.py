@@ -188,6 +188,8 @@ data = segment.getdata()
 ALL = []
 for i in bss:
     ALL.append(bss)
+for i in data:
+    ALL.append(data)
 
 # 对于同一node 如果前后地址一致，则append tuple(start,end); 前后地址不一致说明是l/s指令，则append tuple(start,start), tuple(end,end)
 # 这里的tuple(end,end) 应该是tuple(end,end+len) len单独一个list传进来，根据指令长度决定，如果是寄存器则通过寻找segement确定 先默认长度为4
