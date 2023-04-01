@@ -193,7 +193,18 @@ def read_from_file(f: str) -> Tuple[CacheConfig, FixpointGraph, Dict[str, str]]:
     node_pattern = re.compile(r"^\s*(\w+)\s*;.*$")
     edge_pattern = re.compile(r"^\s*(\w+)\s*->\s*(\w+)\s*;.*$")
     access_pattern = re.compile(r"^\s*\[\s*(\w+)\s*](.+);.*$")
+    '''
+    ^\s*: 匹配字符串开头的零个或多个空格
+    \[\s*(\w+)\s*\]: 匹配一个方括号以及其中间可能包含的零个或多个空格和一个或多个单词字符（即字母、数字或下划线）。
+    (.+): 匹配一个或多个任意字符（除了换行符）
+    ;.*$: 匹配分号和之后可能存在的零个或多个任意字符（除了换行符），直到字符串结尾
+    '''
     key_val_pattern = re.compile(r"^\s*(\w+)\s*:\s*(\w+)\s*;.*$")
+    '''
+    用 -> 匹配edge信息
+    用 [] 匹配access
+    用 : 匹配cache信息配置
+    '''
 
     basic_results, other_param = {'nodes': [], 'edges': [], 'access': dict()}, dict()
 
