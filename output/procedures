@@ -20,8 +20,8 @@ digraph "Procedure Graph" {
 	__libc_csu_fini
 	_fini
 	_init -> call_weak_fn
-	_start -> "__libc_start_main@plt"
 	_start -> "abort@plt"
+	_start -> "__libc_start_main@plt"
 	call_weak_fn -> "__gmon_start__@plt"
 	__do_global_dtors_aux -> deregister_tm_clones
 	__do_global_dtors_aux -> "__cxa_finalize@plt"
