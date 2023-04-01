@@ -184,12 +184,13 @@ print(mem_node)
 segment = segmentReader(r'C:\Users\51777\Desktop\华为memory\test\objdump\-D manytest.asm')
 bss = segment.getbss()
 data = segment.getdata()
-# 将.bss 和 .data 合成一个 一般是.data 在前面
+# 将.bss 和 .data 合成一个 一般是 .data在前 .bss在后
 ALL = []
-for i in bss:
-    ALL.append(bss)
-for i in data:
-    ALL.append(data)
+for i in range(len(bss)):
+    ALL.append(bss[i])
+for i in range(len(data)):
+    ALL.append(data[i])
+# print(ALL)
 
 # 对于同一node 如果前后地址一致，则append tuple(start,end); 前后地址不一致说明是l/s指令，则append tuple(start,start), tuple(end,end)
 # 这里的tuple(end,end) 应该是tuple(end,end+len) len单独一个list传进来，根据指令长度决定，如果是寄存器则通过寻找segement确定 先默认长度为4
@@ -207,7 +208,11 @@ for item in mem_head:
         result[key].append((item[1], item[1]+4))
         # load and store加长度
         # TODO 找到的segment传过来的LIST是 ['0000000000420028', 'i', 4325416, 4325420] ---> if item[3] == -1 and item[2] == LIST[2] ---> result[key].append((item[2], LSIT[3])) 将尾部加进来就行
-        result[key].append((item[2], item[2]+item[3]))
+        for i in range(len(ALL)):
+            if item[3] == -1 and item[2] == ALL[i][2]:
+                result[key].append((item[2], ALL[i][3]))
+            else:
+                result[key].append((item[2], item[2]+item[3]))
 
 for key in result:
     result[key] = tuple(result[key])
