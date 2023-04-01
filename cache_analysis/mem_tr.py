@@ -1,7 +1,7 @@
-# fp = r"D:\workspace\Gitdocuments\hw-memory\benchmarks\spec_example\spec2006_470.lbm\lbm_part.asm"
+fp = r"D:\workspace\Gitdocuments\hw-memory\benchmarks\old_benchmark\spec_example\spec2006_470.lbm\lbm_part.asm"
 from cache_analysis import read_segment
 
-fp = r"C:\Users\51777\Desktop\华为memory\test\objdump\-dmanytest.asm"
+# fp = r"C:\Users\51777\Desktop\华为memory\test\objdump\-dmanytest.asm"
 
 from newCFG.cfg import proc_identify
 from newCFG.isa import Instruction, AddrMode
@@ -217,6 +217,30 @@ print(result)
 mem_edge = []
 for i in tcfg_edges:
     # print(i.src.name, i.dst.name)
-    mem_edge.append((i.src.name,i.dst.name))
+    mem_edge.append((i.src.name, i.dst.name))
 # cache分析所需要的边信息 node--->node 有向边
 print(mem_edge)
+
+
+'''
+    将memory trace按照in格式打印到文件里 方便分析
+        用 -> 匹配edge信息
+        用 [] 匹配access
+        用 : 匹配cache信息配置
+'''
+max_width = max(len(key) for key in result.keys()) # 定义最宽字符 为了后面做准备
+with open('new_cache/input/cache_information.in', 'w') as f:
+    f.write("entry: n0   ;\n\n")
+    for node in mem_node:
+        f.write(node + ';' + '\n')
+    for edge_in, edge_out in mem_edge:
+        f.write(f"{edge_in} -> {edge_out}" + ';' + '\n')
+    for key, values in result.items():
+        f.write(f"[{key:<{max_width}}] ")
+        for i, (start, end) in enumerate(values):
+            f.write(f"{start}-{end}")
+            if i != len(values) - 1: # 如果不是最后一个元组，则加上逗号
+                f.write(", ")
+        f.write(";\n")
+    # TODO 考虑cache基本信息从哪里得到? e.g.,cache信息从一个config读入; 暂时直接指定
+    f.write("cache_offset: 6     ;\ncache_set_index: 8  ;\ncache_assoc: 4      ;")
