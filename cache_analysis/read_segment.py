@@ -122,8 +122,6 @@ class segmentReader:
         return result2
 
 
-
-
 # segment = segmentReader(r'C:\Users\51777\Desktop\华为memory\test\objdump\-D manytest.asm')
 # segment.getbss()
 # bss = segment.getbss()
