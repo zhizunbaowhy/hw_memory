@@ -538,7 +538,7 @@ Disassembly of section .data:
         ...
 
 0000000000420028 <i>:
-  420028:       40551eb8        .inst   0x40551eb8; undefined
+  420028:       40551eb8        .inst   0x40551eb8 ; undefined
 
 000000000042002c <j>:
   42002c:       00000003        udf     #3

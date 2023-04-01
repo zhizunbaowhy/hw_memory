@@ -1,4 +1,7 @@
-fp = r"D:\workspace\Gitdocuments\hw-memory\benchmarks\spec_example\spec2006_470.lbm\lbm_part.asm"
+# fp = r"D:\workspace\Gitdocuments\hw-memory\benchmarks\spec_example\spec2006_470.lbm\lbm_part.asm"
+from cache_analysis import read_segment
+
+fp = r"C:\Users\51777\Desktop\华为memory\test\objdump\-dmanytest.asm"
 
 from newCFG.cfg import proc_identify
 from newCFG.isa import Instruction, AddrMode
@@ -6,6 +9,7 @@ from typing import Tuple
 from newCFG.read_asm import AsmFileReader, StatementType
 from graphviz import Digraph
 from newCFG.cfg import draw_proc, find_cycle, has_cycle, proc_draw_edges
+from read_segment import segmentReader
 
 reader = AsmFileReader(fp)
 
@@ -128,7 +132,7 @@ lds_table = lsproc.ls_table
 
 for i in lds_table:
     print("node", i.node.name, "指令", i.ins.tokens, "是否是SP", i.is_sp, "指令地址", i.ins.addr.val(), "访存地址",
-          i.final_addr)
+          i.final_addr, "数据宽度", i.ins.ls_data_width)
 
 rwproc = RWProc(lds_table)
 
@@ -140,8 +144,8 @@ rwproc = RWProc(lds_table)
 mem_ls = []
 for i in lds_table:
     if i.is_sp is False:
-        # node + address(string) + address(int) + load/store address(int)
-        mem_ls.append([i.node.name] + [i.ins.tokens[0]] + [i.ins.addr.val()] + [i.final_addr])
+        # node + address(string) + address(int) + load/store address(int) + data width(Byte=bit/8)
+        mem_ls.append([i.node.name] + [i.ins.tokens[0]] + [i.ins.addr.val()] + [i.final_addr] + [int(i.ins.ls_data_width/8)])
 print(mem_ls)
 # print(mem_ls[0][2])
 
@@ -157,32 +161,51 @@ for i in tcfg_nodes:
     mem_node.append(i.name)
     for m in i.instructions:
         # print(m.addr.hex_str())
-        # 整个asm的所有指令
-        mem_head.append([i.name] + [m.addr.val()] + [m.addr.val()])
+        # 整个asm的所有指令; 所有长度默认为4
+        mem_head.append([i.name] + [m.addr.val()] + [m.addr.val()] + [4])
+
+# print(mem_ls)
+# print(mem_head)
+# 判断load and store指令 如果是load/store将后面的值改为访存地址值(int)
 for n in range(len(mem_ls)):
     for i in range(len(mem_head)):
+        # 第一个条件是判断是否同一 node; 第二个条件判断地址是不是load/store的
         if mem_ls[n][0] == mem_head[i][0] and mem_ls[n][2] == mem_head[i][1]:
+            # 将第三个元素替换为数据的访存地址
             mem_head[i][2] = mem_ls[n][3]
-
+            # 将长度替换为load/store传过来的长度
+            mem_head[i][3] = mem_ls[n][4]
 
 print(mem_head)
 # cache分析所需要的memory node信息
 print(mem_node)
-# print(tcfg_nodes.instructions)
+
+# 在这里提前获得.bss & .data segment信息
+segment = segmentReader(r'C:\Users\51777\Desktop\华为memory\test\objdump\-D manytest.asm')
+bss = segment.getbss()
+data = segment.getdata()
+# 将.bss 和 .data 合成一个 一般是.data 在前面
+ALL = []
+for i in bss:
+    ALL.append(bss)
 
 # 对于同一node 如果前后地址一致，则append tuple(start,end); 前后地址不一致说明是l/s指令，则append tuple(start,start), tuple(end,end)
-# TODO 这里的tuple(end,end) 应该是tuple(end,end+len) len单独一个list传进来，根据指令长度决定，如果是寄存器则通过寻找segement确定 先默认长度为4
+# 这里的tuple(end,end) 应该是tuple(end,end+len) len单独一个list传进来，根据指令长度决定，如果是寄存器则通过寻找segement确定 先默认长度为4
 for item in mem_head:
     key = item[0]
     if key not in result:
         result[key] = []
-    # TODO 预想的是 这边mem_head中会从（mem_ls会从load and store那里获取长度属性）然后将其添加到mem_ls 变成类似 ['n0', 1920, 1920, 4] 4即为长度 然后直接加长度即可 item[2]+item[3]
+    # 预想的是 这边mem_head中会从（mem_ls会从load and store那里获取长度属性）然后将其添加到mem_ls 变成类似 ['n0', 1920, 1920, 4] 4即为长度 然后直接加长度即可 item[2]+item[3]
     # TODO 这里item[3]如果是寄存器 比如这里用-1记录, 或用特定的值(不可能是长度的值)比如 3; 提前判断:如果是寄存器,则从另一个获得长度的list中替换item[3]
     if item[1] == item[2]:
+        # 指令默认为4
         result[key].append((item[1], item[2]+4))
     else:
+        # 指令默认为4
         result[key].append((item[1], item[1]+4))
-        result[key].append((item[2], item[2]+4))
+        # load and store加长度
+        # TODO 找到的segment传过来的LIST是 ['0000000000420028', 'i', 4325416, 4325420] ---> if item[3] == -1 and item[2] == LIST[2] ---> result[key].append((item[2], LSIT[3])) 将尾部加进来就行
+        result[key].append((item[2], item[2]+item[3]))
 
 for key in result:
     result[key] = tuple(result[key])
