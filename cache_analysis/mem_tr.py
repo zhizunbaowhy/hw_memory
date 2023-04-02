@@ -1,7 +1,7 @@
-# fp = r"D:\workspace\Gitdocuments\hw-memory\benchmarks\old_benchmark\spec_example\spec2006_470.lbm\lbm_part.asm"
+fp = r"D:\workspace\Gitdocuments\hw-memory\benchmarks\old_benchmark\spec_example\spec2006_470.lbm\lbm_part.asm"
 from cache_analysis import read_segment
 
-fp = r"C:\Users\51777\Desktop\华为memory\test\objdump\-dmanytest.asm"
+# fp = r"C:\Users\51777\Desktop\华为memory\test\objdump\-dmanytest.asm"
 
 from newCFG.cfg import proc_identify
 from newCFG.isa import Instruction, AddrMode
@@ -132,7 +132,7 @@ lds_table = lsproc.ls_table
 
 for i in lds_table:
     print("node", i.node.name, "指令", i.ins.tokens, "是否是SP", i.is_sp, "指令地址", i.ins.addr.val(), "访存地址",
-          i.final_addr, "数据宽度", i.ins.ls_data_width)
+          i.final_addr, "数据宽度", i.ins.ls_data_width, "访存类型", i.ins.ls_addr_mode)
 
 rwproc = RWProc(lds_table)
 
@@ -145,9 +145,14 @@ mem_ls = []
 for i in lds_table:
     if i.is_sp is False:
         # node + address(string) + address(int) + load/store address(int) + data width(Byte=bit/8)
-        mem_ls.append([i.node.name] + [i.ins.tokens[0]] + [i.ins.addr.val()] + [i.final_addr] + [int(i.ins.ls_data_width/8)])
-print(mem_ls)
+        mem_ls.append([i.node.name] + [i.ins.tokens[0]] + [i.ins.addr.val()] + [i.final_addr] + [int(i.ins.ls_data_width/8)] + [str(i.ins.ls_addr_mode)])
+# print(mem_ls)
 # print(mem_ls[0][2])
+# 如果AddressMode是寄存器则赋值 -1
+for item in mem_ls:
+    if item[5] == "AddrMode.Reg": # TODO 这里具体是不是AddrMode.Reg还需要再看
+        item[4] = -1
+# print(mem_ls)
 
 mem_node = []
 mem_head = []
@@ -176,7 +181,7 @@ for n in range(len(mem_ls)):
             # 将长度替换为load/store传过来的长度
             mem_head[i][3] = mem_ls[n][4]
 
-print("mem_head: ", mem_head)
+# print("mem_head: ", mem_head)
 # cache分析所需要的memory node信息
 print(mem_node)
 
@@ -190,18 +195,19 @@ for i in range(len(bss)):
     ALL.append(bss[i])
 for i in range(len(data)):
     ALL.append(data[i])
-print("ALL:", ALL)
+# print("ALL:", ALL)
 
 # 处理.data的最后一个数据长度, 就是.bss段开始标志的'completed.0'地址
 ALL[-1][3] = ALL[0][2]
-print("ALL222:", ALL)
+# print("ALL222:", ALL)
 
 # 直接把.bss/.data中全局变量长度 替换到mem_head里,更方便
 for i in ALL:
     for item in mem_head:
-        if i[2] == item[2] and item[3] == -1: # 这里item[3]如果是寄存器 比如这里用-1记录, 或用特定的值(不可能是长度的值)比如 3; 提前判断:如果是寄存器,则从另一个获得长度的list中替换item[3]
+        # 这里item[3]如果是寄存器 比如这里用-1记录; 提前判断:如果是寄存器,则用tail-head得到的长度替换item[3]
+        if i[2] == item[2] and item[3] == -1:
             item[3] = i[3]-i[2]
-print("mem_head222: ", mem_head)
+# print("mem_head222: ", mem_head)
 
 # 对于同一node 如果前后地址一致，则append tuple(start,end); 前后地址不一致说明是l/s指令，则append tuple(start,start), tuple(end,end)
 # 这里的tuple(end,end) 应该是tuple(end,end+len) len单独一个list传进来，根据指令长度决定，如果是寄存器则通过寻找segement确定 先默认长度为4
@@ -209,8 +215,7 @@ for item in mem_head:
     key = item[0]
     if key not in result:
         result[key] = []
-    # 预想的是 这边mem_head中会从（mem_ls会从load and store那里获取长度属性）然后将其添加到mem_ls 变成类似 ['n0', 1920, 1920, 4] 4即为长度 然后直接加长度即可 item[2]+item[3]
-    # TODO 这里item[3]如果是寄存器 比如这里用-1记录, 或用特定的值(不可能是长度的值)比如 3; 提前判断:如果是寄存器,则从另一个获得长度的list中替换item[3]
+    # 这边mem_head中会从（mem_ls会从load and store那里获取长度属性）然后将其添加到mem_ls 变成类似 ['n0', 1920, 1920, 4] 4即为长度 然后直接加长度即可 item[2] +item[3]
     if item[1] == item[2]:
         # 指令默认为4
         result[key].append((item[1], item[2]+4))
@@ -220,14 +225,16 @@ for item in mem_head:
         # load and store加长度
         result[key].append((item[2], item[2]+item[3]))
 
-        # TODO 找到的segment传过来的LIST是 ['0000000000420028', 'i', 4325416, 4325420] ---> if item[3] == -1 and item[2] == LIST[][2] ---> result[key].append((item[2], LSIT[][3])) 将尾部加进来就行
-        # TODO 需要debug 这里不能range(len(ALL)) 不然会重复添加多次else语句 但其实一次就行
+        # DELETE_START
+        # 找到的segment传过来的LIST是 ['0000000000420028', 'i', 4325416, 4325420] ---> if item[3] == -1 and item[2] == LIST[][2] ---> result[key].append((item[2], LSIT[][3])) 将尾部加进来就行
+        # 需要debug 这里不能range(len(ALL)) 不然会重复添加多次else语句 但其实一次就行
         # for i in range(len(ALL)):
         #     if item[3] == -1 and item[2] == ALL[i][2]:
         #         result[key].append((item[2], ALL[i][3]))
-        #     # TODO 去掉else也不对, 因为会重新计算一次这个数据 ---> 加一个if判断 ---> 还是错的
+        #     # 去掉else也不对, 因为会重新计算一次这个数据 ---> 加一个if判断 ---> 还是错的
         #     elif item[3] != -1 and item[2] != ALL[i][2]:
         #         result[key].append((item[2], item[2]+item[3]))
+        # DELETE_END
 
 for key in result:
     result[key] = tuple(result[key])
