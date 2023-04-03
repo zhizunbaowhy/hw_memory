@@ -8,17 +8,16 @@
 import os.path
 import sys
 import traceback
-from typing import Any, Callable, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import QObject, QRegExp, Qt
-from PyQt5.QtGui import QColor, QFont, QSyntaxHighlighter, QTextCharFormat
+from PyQt5.QtGui import QBrush, QColor, QFont, QFontDatabase, QSyntaxHighlighter, QTextCharFormat
 from PyQt5.QtWebEngineWidgets import QWebEngineView
-from PyQt5.QtWidgets import QAction, QApplication, QDesktopWidget, QFileDialog, QHBoxLayout, QLabel, QLineEdit, QMainWindow, QMdiArea, QMdiSubWindow, \
-    QMessageBox, QSizePolicy, QStyleFactory, QTextEdit, QVBoxLayout, QWidget
-from graphviz import Digraph
+from PyQt5.QtWidgets import QAction, QApplication, QComboBox, QDesktopWidget, QFileDialog, QHBoxLayout, QLabel, QLineEdit, QMainWindow, QMdiArea, QMdiSubWindow, \
+    QMessageBox, QSizePolicy, QStyleFactory, QTableWidget, QTableWidgetItem, QTextEdit, QVBoxLayout, QWidget
 
-from newCFG.cfg import CallGraph, TCfg, draw_proc, find_cycle, has_cycle, proc_draw_edges, proc_identify
+from newCFG.cfg import CallGraph, TCfg, find_cycle, has_cycle, proc_draw_edges, proc_identify
 from newCFG.isa import Instruction
 from newCFG.read_asm import AsmFileReader, StatementType
 
@@ -115,6 +114,77 @@ class OptWebView(QWebEngineView):
 
     def clear(self):
         self.setUrl(QtCore.QUrl("about:blank"))
+
+
+class ResultTableWindow(SubWindow):
+
+    __style_table = """
+        QTableView , QTableWidget{
+            selection-background-color:#44c767;
+            background-color:white;
+            border:1px solid #E0DDDC;
+            gridline-color:lightgray;
+        }
+    """
+
+    def __init__(self, parent, **kwargs):
+        super().__init__(parent, **kwargs)
+        self.__data_mapping = list()
+
+        self.combo_box = QComboBox()
+        font = QFontDatabase.systemFont(QFontDatabase.GeneralFont)
+        font.setFamily("Times Now Roman")
+        font.setBold(True)
+        font.setPixelSize(17)
+        self.combo_box.setFont(font)
+
+        self.table_widget = QTableWidget()
+        self.table_widget.setColumnCount(5)
+        self.table_widget.setEditTriggers(QTableWidget.NoEditTriggers)
+        self.table_widget.setSelectionMode(QTableWidget.NoSelection)
+        self.table_widget.setStyleSheet(self.__style_table)
+        font = QFontDatabase.systemFont(QFontDatabase.GeneralFont)
+        font.setFamily('Arial')
+        font.setPixelSize(15)
+        self.table_widget.setFont(font)
+
+        self.combo_box.currentTextChanged.connect(self.__set_table_data)
+        self.combo_box.addItem("None")
+
+        layout = QVBoxLayout()
+        layout.addWidget(self.combo_box)
+        layout.addWidget(self.table_widget)
+        widget = QWidget()
+        widget.setLayout(layout)
+        self.setWidget(widget)
+
+    def set_data(self, items: List[str], data_mapping: dict):
+        self.__data_mapping = data_mapping
+        self.combo_box.clear()
+        self.combo_box.addItems([item for item in items if item in self.__data_mapping])
+
+    def __set_table_data(self):
+        self.table_widget.clear()
+        self.table_widget.setColumnCount(5)
+        headers = ['', 'Column 1', 'Column 2', 'Column 3', 'Column 4']
+        self.table_widget.setHorizontalHeaderLabels(headers)
+        if (t := self.combo_box.currentText()) in ('None', ''):
+            self.table_widget.setRowCount(0)
+            return
+        data = self.__data_mapping[t]
+        self.table_widget.setRowCount(len(data))
+        for row, row_data in enumerate(data):
+            item = QTableWidgetItem("")
+            item.setBackground(QBrush(QColor(0, 190, 0)))
+            self.table_widget.setItem(row, 0, item)
+            for col, cell_data in enumerate(row_data):
+                item = QTableWidgetItem(cell_data)
+                item.setTextAlignment(Qt.AlignCenter)
+                if col == 0:
+                    font = QFont()
+                    font.setBold(True)
+                    item.setFont(font)
+                self.table_widget.setItem(row, col + 1, item)
 
 
 class TargetCodeWindow(SubWindow):
@@ -375,6 +445,10 @@ class SecondaryWindow(QWidget):
 
 
 def processing(c_f, asm_f, progress_cb, c_cb: Callable, asm_cb: Callable, cfg_cb: Callable, result_cb: Callable):
+    """
+    Main processing function.
+    """
+
     progress_cb(0, "Cleaning...")
 
     c_cb("")
@@ -402,7 +476,7 @@ def processing(c_f, asm_f, progress_cb, c_cb: Callable, asm_cb: Callable, cfg_cb
         elif s[0] == StatementType.SubProcedure:
             statements.append(s)
 
-    progress_cb(30, "Building procedures and control flow graph...")
+    progress_cb(40, "Building procedures and control flow graph...")
 
     procs = proc_identify(statements)
     proc_draw_edges(procs)
@@ -414,13 +488,19 @@ def processing(c_f, asm_f, progress_cb, c_cb: Callable, asm_cb: Callable, cfg_cb
     tcfg = TCfg(call_graph)
     tcfg.build_tcfg()
 
-    progress_cb(30, "Drawing control flow graph...")
+    progress_cb(60, "Drawing control flow graph...")
+
     g = tcfg.draw_graph()
     target = g.render(filename='tcfg', directory='./output', format='svg')
     cfg_cb(os.path.abspath(target.replace("\\", "/")).replace("\\", "/"))
 
+    progress_cb(80, "Doing analysis...")
+
+    result_cb(['demo1', 'demo2'], {'demo1': [['a1', 'a2', 'a3', 'a4'],
+                                             ['a5', 'a6', 'a7', 'a8']],
+                                   'demo2': [['b1', 'b2', 'b3', 'b4']]})
+
     progress_cb(100)
-    # TODO.
 
 
 class MainWindow(QMainWindow):
@@ -438,14 +518,14 @@ class MainWindow(QMainWindow):
         self.target_code_sub = TargetCodeWindow(self, title='Target code')
         self.asm_file_sub = ASMWindow(self, title='ASM file')
         self.cfg_sub = CFGWindow(self, title='Control flow graph')
-        self.result_sub = SubWindow(self, title='Result')
+        self.result_sub = ResultTableWindow(self, title='Result')
         # Create secondary window
         self.choose_file_sec = SecondaryWindow()
 
         self.choose_file_sec.c_callback = self.target_code_sub.set_c_code
         self.choose_file_sec.asm_callback = self.asm_file_sub.set_asm_code
         self.choose_file_sec.cfg_callback = self.cfg_sub.render_graph
-        # TODO: result.
+        self.choose_file_sec.result_callback = self.result_sub.set_data
 
         # Add sub-windows to MDI area
         self.mdi.addSubWindow(self.target_code_sub)
