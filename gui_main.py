@@ -5,16 +5,22 @@
 @FileName   : gui_main.py
 @Description: 
 """
+import os.path
 import sys
-from typing import Any, List, Optional, Tuple
+import traceback
+from typing import Any, Callable, List, Optional, Tuple, Union
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import QObject, QRegExp, Qt
 from PyQt5.QtGui import QColor, QFont, QSyntaxHighlighter, QTextCharFormat
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtWidgets import QAction, QApplication, QDesktopWidget, QFileDialog, QHBoxLayout, QLabel, QLineEdit, QMainWindow, QMdiArea, QMdiSubWindow, \
-    QStyleFactory, \
-    QTextEdit, QVBoxLayout, QWidget
+    QMessageBox, QSizePolicy, QStyleFactory, QTextEdit, QVBoxLayout, QWidget
+from graphviz import Digraph
+
+from newCFG.cfg import CallGraph, TCfg, draw_proc, find_cycle, has_cycle, proc_draw_edges, proc_identify
+from newCFG.isa import Instruction
+from newCFG.read_asm import AsmFileReader, StatementType
 
 
 class CCodeHighlighter(QSyntaxHighlighter):
@@ -24,7 +30,7 @@ class CCodeHighlighter(QSyntaxHighlighter):
         keyword_format.setForeground(QColor("#7f0055"))
         keyword_format.setFontWeight(QFont.Bold)
 
-        keywords = ["auto", "break", "case", "char", "const", "continue", "default", "do", "double", "else", "enum", "extern",
+        keywords = ["#", "include", "define", "auto", "break", "case", "char", "const", "continue", "default", "do", "double", "else", "enum", "extern",
                     "float", "for", "goto", "if", "int", "long", "register", "return", "short", "signed", "sizeof", "static", "struct",
                     "switch", "typedef", "union", "unsigned", "void", "volatile", "while"]
         keyword_pattern = "\\b(" + "|".join(keywords) + ")\\b"
@@ -33,8 +39,6 @@ class CCodeHighlighter(QSyntaxHighlighter):
         comment_format.setForeground(QColor("#888a85"))
         string_format = QTextCharFormat()
         string_format.setForeground((QColor("#2e8b57")))
-        constant_format = QTextCharFormat()
-        constant_format.setForeground((QColor("#dc322f")))
 
         rules = [
             (QRegExp(keyword_pattern), keyword_format),
@@ -42,7 +46,6 @@ class CCodeHighlighter(QSyntaxHighlighter):
             (QRegExp(r"/\\*[^*]*\\*+(?:[^/*][^*]*\\*+)*/"), comment_format),  # multi-line comment
             (QRegExp("\".*\""), string_format),  # double-quoted string
             (QRegExp("'.{1}'"), string_format),  # single-quoted character
-            (QRegExp("[0-9]+"), constant_format)  # numeric constant
         ]
 
         return rules
@@ -104,8 +107,11 @@ class OptWebView(QWebEngineView):
         super(OptWebView, self).__init__()
         self.setUrl(QtCore.QUrl("about:blank"))
 
-    def render_local_file(self, f):
-        self.setUrl(QtCore.QUrl(f"file:///{f}"))
+    def render_local_file(self, f=None):
+        if f is None:
+            self.clear()
+        else:
+            self.setUrl(QtCore.QUrl("file:///{}".format(f)))
 
     def clear(self):
         self.setUrl(QtCore.QUrl("about:blank"))
@@ -121,7 +127,6 @@ class TargetCodeWindow(SubWindow):
         self.highlighter = CCodeHighlighter(self.text_edit, style='c')
         self.setWidget(self.text_edit)
 
-    @QtCore.pyqtSlot(str)
     def set_c_code(self, code: str):
         self.text_edit.setPlainText(code)
 
@@ -136,7 +141,6 @@ class ASMWindow(SubWindow):
         self.highlighter = CCodeHighlighter(self.text_edit, style='asm')
         self.setWidget(self.text_edit)
 
-    @QtCore.pyqtSlot(str)
     def set_asm_code(self, code: str):
         self.text_edit.setPlainText(code)
 
@@ -147,8 +151,7 @@ class CFGWindow(SubWindow):
         self.graph_render = OptWebView()
         self.setWidget(self.graph_render)
 
-    @QtCore.pyqtSlot(str)
-    def render_graph(self, file_name):
+    def render_graph(self, file_name=None):
         self.graph_render.clear()
         self.graph_render.render_local_file(file_name)
 
@@ -172,13 +175,15 @@ class ActionWithMapping(QAction):
         return self.__action_key
 
 
-def file_filter_gen(flt: List[Tuple[str, List[str]]]):
-    return ";;".join([f"{name} (" + " ".join([f"*.{ty}" for ty in ty_lst]) + ")" for name, ty_lst in flt])
+class UserInput:
+    @staticmethod
+    def file_filter_gen(flt: List[Tuple[str, List[str]]]):
+        return ";;".join([f"{name} (" + " ".join([f"*.{ty}" for ty in ty_lst]) + ")" for name, ty_lst in flt])
 
-
-def get_open_file(parent: Optional[QWidget], title: str, base_dir: str = "./", file_filter: str = "Any (*.*)") -> Tuple[str, str]:
-    file_name, selected_filter = QFileDialog().getOpenFileName(parent, title, directory=base_dir, filter=file_filter)
-    return file_name, selected_filter
+    @staticmethod
+    def get_open_file(parent: Optional[QWidget], title: str, base_dir: str = "./", file_filter: str = "Any (*.*)") -> Tuple[str, str]:
+        file_name, selected_filter = QFileDialog().getOpenFileName(parent, title, directory=base_dir, filter=file_filter)
+        return file_name, selected_filter
 
 
 class LineEditWithLabel:
@@ -194,16 +199,92 @@ class LineEditWithLabel:
         return self.label, self.line_edit
 
 
+class ResizableMessageBox(QMessageBox):
+    """ See
+    https://stackoverflow.com/questions/2655354/how-to-allow-resizing-of-qmessagebox-in-pyqt4/2664019#2664019
+    for details. """
+
+    def __init__(self, *args, **kwargs):
+        super(ResizableMessageBox, self).__init__(*args, **kwargs)
+        self.setSizeGripEnabled(True)
+
+    def event(self, e):
+        result = QMessageBox.event(self, e)
+
+        self.setMinimumHeight(0)
+        self.setMaximumHeight(16777215)
+        self.setMinimumWidth(200)
+        self.setMaximumWidth(16777215)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+        textEdit = self.findChild(QTextEdit)
+        if textEdit is not None:
+            textEdit.setMinimumHeight(0)
+            textEdit.setMaximumHeight(16777215)
+            textEdit.setMinimumWidth(200)
+            textEdit.setMaximumWidth(16777215)
+            textEdit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+        return result
+
+
+class Messenger:
+    __error_icon = QMessageBox.Critical
+    __info_icon = QMessageBox.Information
+
+    @staticmethod
+    def __msg_box_init(parent: Optional[QWidget], title: str, text: str, informative_text: Optional[str], details_text: Optional[str],
+                       buttons: Union[int, QMessageBox.StandardButton], default_button: Union[int, QMessageBox.StandardButton]):
+        msg_box = ResizableMessageBox(parent)
+
+        msg_box.setBaseSize(200, 100)
+        msg_box.setWindowTitle(title)
+        msg_box.setText(text)
+        if informative_text is not None:
+            msg_box.setInformativeText(informative_text)
+        if details_text is not None:
+            msg_box.setDetailedText(details_text)
+        msg_box.setStandardButtons(buttons)
+        msg_box.setDefaultButton(default_button)
+
+        return msg_box
+
+    @staticmethod
+    def information(parent: Optional[QWidget], title: str, text: str,
+                    informative_text: Optional[str] = None, details_text: Optional[str] = None,
+                    buttons: Union[int, QMessageBox.StandardButton] = QMessageBox.Ok,
+                    default_button: Union[int, QMessageBox.StandardButton] = QMessageBox.Ok) -> str:
+
+        msg_box = Messenger.__msg_box_init(parent, title, text, informative_text, details_text, buttons, default_button)
+        msg_box.setIcon(Messenger.__info_icon)
+        msg_box.exec()
+        return msg_box.clickedButton().text()
+
+    @staticmethod
+    def error(parent: Optional[QWidget], title: str, text: str,
+              informative_text: Optional[str] = None, details_text: Optional[str] = None,
+              buttons: Union[int, QMessageBox.StandardButton] = QMessageBox.Ok,
+              default_button: Union[int, QMessageBox.StandardButton] = QMessageBox.Ok) -> str:
+
+        msg_box = Messenger.__msg_box_init(parent, title, text, informative_text, details_text, buttons, default_button)
+        msg_box.setIcon(Messenger.__error_icon)
+        msg_box.exec()
+        return msg_box.clickedButton().text()
+
+
 class SecondaryWindow(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowModality(Qt.ApplicationModal)
 
-        self.__c, self.__asm, self.__v = "", "", 0
+        self.c_callback: Callable = lambda: None
+        self.asm_callback: Callable = lambda: None
+        self.cfg_callback: Callable = lambda: None
+        self.result_callback: Callable = lambda: None
 
         # Set up the UI
-        self.setWindowTitle("Secondary Window")
-        self.resize(400, 150)
+        self.setWindowTitle("Choose File")
+        self.resize(400, 300)
 
         self.asm_file_label, self.asm_file_edit = LineEditWithLabel(self, label_name='ASM File').components()
         self.asm_file_btn = QtWidgets.QPushButton("browse...", self)
@@ -231,7 +312,10 @@ class SecondaryWindow(QWidget):
         layout_c.addWidget(self.c_file_btn)
 
         self.progress_bar = QtWidgets.QProgressBar()
-        self.update_progress_bar(self.__v)
+        self.progress_bar.setStyleSheet("QProgressBar::chunk {background-color: skyblue;}")
+        self.progress_bar.setFormat("")
+        self.step_label = QLabel()
+        self.update_progress_bar(0)
 
         layout = QVBoxLayout()
         layout.addWidget(self.asm_file_label)
@@ -239,17 +323,18 @@ class SecondaryWindow(QWidget):
         layout.addWidget(self.c_file_label)
         layout.addLayout(layout_c)
         layout.addStretch()
+        layout.addWidget(self.step_label)
         layout.addWidget(self.progress_bar)
         layout.addLayout(layout_btn)
         self.setLayout(layout)
 
     def choose_asm_file(self):
-        fp, ok = get_open_file(self, title="Choose ASM file", file_filter=file_filter_gen([("ASM File", ['asm'])]))
+        fp, ok = UserInput.get_open_file(self, title="Choose ASM file", file_filter=UserInput.file_filter_gen([("ASM File", ['asm'])]))
         if ok:
             self.asm_file_edit.setText(fp)
 
     def choose_c_file(self):
-        fp, ok = get_open_file(self, title="Choose C file", file_filter=file_filter_gen([("C Code", ['c', 'cpp', 'hpp', 'h'])]))
+        fp, ok = UserInput.get_open_file(self, title="Choose C file", file_filter=UserInput.file_filter_gen([("C Code", ['c', 'cpp', 'hpp', 'h'])]))
         if ok:
             self.c_file_edit.setText(fp)
 
@@ -260,15 +345,18 @@ class SecondaryWindow(QWidget):
         self.c_file_btn.setEnabled(False)
         self.generate_btn.setEnabled(False)
         self.cancel_btn.setEnabled(False)
+        self.update_progress_bar(0, "Start running...")
+        self.progress_bar.setStyleSheet("QProgressBar::chunk {background-color: skyblue;}")
         try:
             c_fp, asm_fp = self.c_file_edit.text(), self.asm_file_edit.text()
-            if asm_fp:
-                processing(c_fp, asm_fp, self.update_progress_bar)
-        except Exception:
-            self.__v = 0
-            raise RuntimeError
+            processing(c_fp, asm_fp, self.update_progress_bar, self.c_callback, self.asm_callback, self.cfg_callback, self.result_callback)
+        except Exception as e:
+            self.progress_bar.setStyleSheet("QProgressBar::chunk {background-color: red;}")
+            self.step_label.setText('Error.')
+            Messenger.error(self, "Error", "Error when processing files.", str(e), details_text=traceback.format_exc())
         else:
-            self.__c, self.__asm, self.__v = c_fp, asm_fp, 100
+            self.step_label.setText('Everything Ok.')
+            self.progress_bar.setStyleSheet("QProgressBar::chunk {background-color: LimeGreen;}")
         finally:
             self.asm_file_edit.setEnabled(True)
             self.c_file_edit.setEnabled(True)
@@ -278,21 +366,61 @@ class SecondaryWindow(QWidget):
             self.cancel_btn.setEnabled(True)
 
     def user_cancel(self):
-        self.c_file_edit.setText(self.__c)
-        self.asm_file_edit.setText(self.__asm)
-        self.progress_bar.setValue(self.__v)
         self.close()
 
-    def update_progress_bar(self, progress):
+    def update_progress_bar(self, progress, behavior=None):
+        behavior = behavior if behavior is not None else "Everything Ok." if progress == 100 else "Waiting..."
+        self.step_label.setText(behavior)
         self.progress_bar.setValue(progress)
 
 
-def processing(file1, file2, callback):
-    # Example processing function
-    for i in range(10):
-        progress = (i + 1) * 10
-        callback(progress)
-        QtCore.QThread.msleep(500)
+def processing(c_f, asm_f, progress_cb, c_cb: Callable, asm_cb: Callable, cfg_cb: Callable, result_cb: Callable):
+    progress_cb(0, "Cleaning...")
+
+    c_cb("")
+    asm_cb("")
+    cfg_cb()
+
+    progress_cb(10, "Read C and ASM code...")
+
+    if c_f:
+        with open(c_f, 'r', encoding='utf-8') as f:
+            c_text = f.read()
+        c_cb(c_text)
+    with open(asm_f, 'r', encoding='utf-8') as f:
+        asm_text = f.read()
+        asm_cb(asm_text)
+
+    progress_cb(20, "Processing code...")
+
+    reader = AsmFileReader(asm_f)
+    statements = list()
+    for s in reader.statements:
+        s: Tuple[StatementType, tuple]
+        if s[0] == StatementType.Instruction:
+            statements.append((s[0], Instruction(s[1])))
+        elif s[0] == StatementType.SubProcedure:
+            statements.append(s)
+
+    progress_cb(30, "Building procedures and control flow graph...")
+
+    procs = proc_identify(statements)
+    proc_draw_edges(procs)
+    is_cycle = has_cycle(procs)
+    if is_cycle:
+        c = [p.name for p in find_cycle(procs)]
+        raise RuntimeError("Loop between procedures is not allowed: {}.".format(c))
+    call_graph = CallGraph(procs)
+    tcfg = TCfg(call_graph)
+    tcfg.build_tcfg()
+
+    progress_cb(30, "Drawing control flow graph...")
+    g = tcfg.draw_graph()
+    target = g.render(filename='tcfg', directory='./output', format='svg')
+    cfg_cb(os.path.abspath(target.replace("\\", "/")).replace("\\", "/"))
+
+    progress_cb(100)
+    # TODO.
 
 
 class MainWindow(QMainWindow):
@@ -313,6 +441,11 @@ class MainWindow(QMainWindow):
         self.result_sub = SubWindow(self, title='Result')
         # Create secondary window
         self.choose_file_sec = SecondaryWindow()
+
+        self.choose_file_sec.c_callback = self.target_code_sub.set_c_code
+        self.choose_file_sec.asm_callback = self.asm_file_sub.set_asm_code
+        self.choose_file_sec.cfg_callback = self.cfg_sub.render_graph
+        # TODO: result.
 
         # Add sub-windows to MDI area
         self.mdi.addSubWindow(self.target_code_sub)
