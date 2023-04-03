@@ -37,7 +37,7 @@ for proc in procs:
             print(inst.addr.hex_str(), inst.opcode, inst.name, inst.operands, inst.branch_info)
         print()
 
-# ------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 proc_draw_edges(procs)
 
 is_cycle = has_cycle(procs)
@@ -48,7 +48,7 @@ if is_cycle:
 g: Digraph = draw_proc(procs)
 g.render(filename='procedures', directory='./output', format='svg')
 
-# ------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 from newCFG.cfg import CallGraph
 
 call_graph = CallGraph(procs)
@@ -56,7 +56,7 @@ call_graph = CallGraph(procs)
 g = call_graph.draw_graph()
 g.render(filename='call_graph', directory='./output', format='svg')
 
-# ------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 from newCFG.cfg import TCfg
 import random
 
@@ -121,7 +121,7 @@ for e in tcfg_edges:
 # for e in tcfg_edges:
 #    print(e.src.name,e.dst.name,e.is_backEdge)
 
-# ------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 from newCFG.cfg import TCfg
 from newCFG.loadstore import LSProc
 from newCFG.rw_condition import RWProc
@@ -140,7 +140,8 @@ rwproc = RWProc(lds_table)
 #    print(rwu.ins.tokens,rwu.find_cycle,rwu.ins.final_addr,rwu.is_torrent)
 
 
-# ------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# get_memory_access ---> cache_information.in
 mem_ls = []
 for i in lds_table:
     if i.is_sp is False:
@@ -183,7 +184,7 @@ for n in range(len(mem_ls)):
 
 # print("mem_head: ", mem_head)
 # cache分析所需要的memory node信息
-print(mem_node)
+# print(mem_node)
 
 # 在这里提前获得.bss & .data segment信息
 segment = segmentReader(r'C:\Users\51777\Desktop\华为memory\test\objdump\-D manytest.asm')
@@ -199,7 +200,7 @@ for i in range(len(data)):
 
 # 处理.data的最后一个数据长度, 就是.bss段开始标志的'completed.0'地址
 ALL[-1][3] = ALL[0][2]
-# print("ALL222:", ALL)
+# print("ALL_Last:", ALL)
 
 # 直接把.bss/.data中全局变量长度 替换到mem_head里,更方便
 for i in ALL:
@@ -239,15 +240,20 @@ for item in mem_head:
 for key in result:
     result[key] = tuple(result[key])
 # cache分析所需要memory trace信息
-print(result)
+# print(result)
 
 mem_edge = []
 for i in tcfg_edges:
     # print(i.src.name, i.dst.name)
     mem_edge.append((i.src.name, i.dst.name))
+
+# print test information of cache analysis
 # cache分析所需要的边信息 node--->node 有向边
 print(mem_edge)
-
+# cache分析所需要的memory node信息
+print(mem_node)
+# cache分析所需要memory trace信息
+print(result)
 
 '''
     将memory trace按照in格式打印到文件里 方便分析
@@ -257,7 +263,8 @@ print(mem_edge)
 '''
 max_width = max(len(key) for key in result.keys()) # 定义最宽字符 为了后面做准备
 with open('new_cache/input/cache_information.in', 'w') as f:
-    f.write("entry: n0   ;\n\n")
+    # f.write(str(loop_list)) # 不需要将loop_information写入到cache_information中, 不需要
+    f.write("\nentry: n0   ;\n\n")
     for node in mem_node:
         f.write(node + ';' + '\n')
     for edge_in, edge_out in mem_edge:
@@ -271,3 +278,137 @@ with open('new_cache/input/cache_information.in', 'w') as f:
         f.write(";\n")
     # TODO 考虑cache基本信息从哪里得到? e.g.,cache信息从一个config读入; 暂时直接指定
     f.write("cache_offset: 6     ;\ncache_set_index: 8  ;\ncache_assoc: 4      ;")
+
+# ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# cache_risk_level_analysis ---> TODO LIST[[loop*, risk*], ...]
+
+# loop_information ---> Dict{}: loop_list{'loop.name':[node_set], ...}
+loop_list = {}
+for loop in tcfg.loops:
+    # print(loop.name)
+    key = loop.name
+    if key not in result:
+        loop_list[key] = []
+
+    for n in loop.all_nodes:
+        loop_list[key].append(n.name)
+print(loop_list)
+
+# 根据loop获取该loop的memory access
+loop_memory_access = {key: [v for k, v in result.items() if k in values] for key, values in loop_list.items()}
+loop_memory_access = {key: tuple(item for sublist in value for item in sublist) for key, value in loop_memory_access.items()}
+# 这里验证以lbm.asm为例, 只有n0和n14访存了更大的page, 但是三个loop中没有包含这两个node的情况, 所以生成的是对的
+print(loop_memory_access)
+
+
+# 根据所得到的loop_memory_access来具体划分每个loop的memory pages
+page_size = 4096
+
+page_loop_access = {}  # 用于保存页面序列的字典
+
+# 遍历所有层级的地址序列
+for level, address_list in loop_memory_access.items():
+    visited_pages = set()  # 用来保存已经访问过的内存页面
+    page_list = []  # 用于保存属于当前地址序列的内存页面
+
+    # 遍历地址序列中的每一个地址并转换为页面编号
+    for addr_start, addr_end in address_list:
+        page_start, page_end = (addr_start // page_size) * page_size, ((addr_end - 1) // page_size + 1) * page_size  # 地址所在的内存页面范围
+        if page_start in visited_pages:  # 如果该页面已经在当前地址序列的处理过程中，直接跳过
+            continue
+        visited_pages.add(page_start)  # 将该页面标记为已处理
+        page_list.append((page_start, page_end))
+
+    page_loop_access[level] = tuple(page_list)  # 添加当前层级的页面列表到结果字典中
+
+print(page_loop_access)
+
+
+
+
+# ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# page_information
+# 根据memory access寻找访问的page
+# 内存页大小（单位：字节_B）
+# page_size = 4096
+# # 保存所有访问的内存地址
+# all_pages = []
+# # 遍历所有的访存地址
+# for program, program_accesses in result.items():
+#     for access in program_accesses:
+#         # 计算当前访问的页面号
+#         page_num = access[0] // page_size
+#         # 计算页面的起始地址和结束地址
+#         page_start = page_num * page_size
+#         page_end = (page_num + 1) * page_size
+#         # 将页面的起始地址和结束地址保存到all_addresses列表中
+#         all_pages.append((page_start, page_end))
+#
+# # 对内存地址进行排序，并合并相同的页面
+# all_pages = sorted(set(all_pages))
+#
+# # 打印所有的内存页面
+# print(all_pages)
+# ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+# cache analysis
+from cache_analysis.new_cache.fixponit import *
+import sys
+
+print(sys.version_info)
+
+# f = r"D:\workspace\Gitdocuments\hw-memory\cache_analysis\new_cache\input\example-0.in"
+f = r"D:\workspace\Gitdocuments\hw-memory\cache_analysis\new_cache\input\cache_information.in"
+config, graph, user_kwargs = read_from_file(f)
+
+print("==== Cache Config ====")
+print("Set index length:", config.set_index_len)
+print("Cache offset:", config.offset_len)
+print("Cache association:", config.assoc)
+
+print("\n==== TCFG ====")
+for node in graph.all_nodes:
+    print(node.ident,
+          "access", [b.__str__() for b in node.access_blocks],
+          "incoming", [n.ident for n in node.incoming],
+          "outgoing", [n.ident for n in node.outgoing])
+
+is_fixpoint = fixpoint(config, graph, 'must', **user_kwargs)  # Switch to `may` or `persistent`.
+print(is_fixpoint, graph.it_number)
+
+# 全部输出
+# for node in graph.all_nodes:
+#     print(node.ident)
+#     for r, mb, hit in node.analysis_result():
+#         print(r, mb, hit)
+
+# 根据loop找所有页面的hit/miss情况
+# for loop in loop_list.values():
+#     # 找属于哪个loop
+#     name = [key for key, value in loop_list.items() if value == loop]
+#     print(name)
+#     for node in graph.all_nodes:
+#         if node.ident not in loop:
+#             continue
+#         print(node.ident)
+#         for r, mb, hit in node.analysis_result():
+#             print(r, mb, hit)
+
+# 根据loop找各个页的hit/miss情况
+# TODO 如果横跨了page 应该如何统计 ---> 生成page_range的时候就规定了页 4096 所以照旧分析即可
+for loop in loop_list.values():
+    # 找属于哪个loop
+    loop_name = [key for key, value in loop_list.items() if value == loop]
+    print(loop_name)
+    for node in graph.all_nodes:
+        if node.ident not in loop:
+            continue
+        print(node.ident)
+        page_range = page_loop_access.get(loop_name[0]) # 得到具体这个loop的page
+        # print(page_range)
+
+        for r, mb, hit in node.analysis_result():
+            for tup in page_range:
+                if r[0] >= tup[0] and r[1] <= tup[1]:
+                    print(int(tup[0]/4096))
+                    print(r, mb, hit)
