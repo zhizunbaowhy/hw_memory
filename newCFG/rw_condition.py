@@ -38,8 +38,8 @@ class RWUnit:
         return self.__find_cycle
 
     def set_torrent(self,ins_name):
-        is_load = re.match(self.__load_cpat,ins_name)
-        is_store = re.match(self.__store_cpat,ins_name)
+        is_load = re.match(self.__load_cpat,self.__ins.name)
+        is_store = re.match(self.__store_cpat,self.__ins.name)
 
         if is_load:
             self.__is_torrent = RWType.Global_Tolerant
