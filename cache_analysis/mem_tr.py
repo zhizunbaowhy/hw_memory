@@ -412,3 +412,53 @@ for loop in loop_list.values():
                 if r[0] >= tup[0] and r[1] <= tup[1]:
                     print(int(tup[0]/4096))
                     print(r, mb, hit)
+
+
+# Persistent分析
+is_fixpoint = fixpoint(config, graph, 'persistent', **user_kwargs)  # Switch to `may` or `persistent`.
+print(is_fixpoint, graph.it_number)
+
+for loop in loop_list.values():
+    # 找属于哪个loop
+    loop_name = [key for key, value in loop_list.items() if value == loop]
+    print(loop_name)
+    for node in graph.all_nodes:
+        if node.ident not in loop:
+            continue
+        print(node.ident)
+        page_range = page_loop_access.get(loop_name[0]) # 得到具体这个loop的page
+        # print(page_range)
+
+        for r, mb, hit in node.analysis_result():
+            for tup in page_range:
+                if r[0] >= tup[0] and r[1] <= tup[1]:
+                    print(int(tup[0]/4096))
+                    print(r, mb, hit)
+
+
+# MAY 分析
+is_fixpoint = fixpoint(config, graph, 'may', **user_kwargs)  # Switch to `may` or `persistent`.
+print(is_fixpoint, graph.it_number)
+
+for loop in loop_list.values():
+    # 找属于哪个loop
+    loop_name = [key for key, value in loop_list.items() if value == loop]
+    print(loop_name)
+    for node in graph.all_nodes:
+        if node.ident not in loop:
+            continue
+        print(node.ident)
+        page_range = page_loop_access.get(loop_name[0]) # 得到具体这个loop的page
+        # print(page_range)
+
+        for r, mb, hit in node.analysis_result():
+            for tup in page_range:
+                if r[0] >= tup[0] and r[1] <= tup[1]:
+                    print(int(tup[0]/4096))
+                    print(r, mb, hit)
+
+
+# TRUE FLASE 统计 按照loop ---> page 粒度
+# TODO MUST找TRUE, 并delete 整个 e.g., (2052, 2056), (<MemBlk tag:0x0 idx:0x20>,), [TRUE] ---> Persistent找True
+# TODO MUST --> if TRUE: (hit++)*loop_bound;  Persistent --> if TRUE: miss++, (hit++)*(loop_bound-1);  MAY --> if FALSE: (miss++)*loop_bound;  UC --> residue: 0.5*(miss++)*loop_bound, 0.5*(hit++)*loop_bound.
+# 是真的实现不出来...
