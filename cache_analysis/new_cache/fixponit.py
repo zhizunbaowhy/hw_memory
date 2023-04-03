@@ -215,6 +215,8 @@ def read_from_file(f: str) -> Tuple[CacheConfig, FixpointGraph, Dict[str, str]]:
     用 [] 匹配access
     用 : 匹配cache信息配置
     '''
+    # # 加一个匹配loop_list的正则
+    # loop_list_pattern = re.compile(r"{\s*[^}]*\s*}")
 
 
     basic_results, other_param = {'nodes': [], 'edges': [], 'access': dict()}, dict()
@@ -225,6 +227,12 @@ def read_from_file(f: str) -> Tuple[CacheConfig, FixpointGraph, Dict[str, str]]:
         for idx, ln in enumerate(fp.readlines()):
             try:
                 line = ln.strip()
+                # # 添加匹配loop_list
+                # matches = loop_list_pattern(line)
+                # for match in matches:
+                #     self.loop = eval(match)
+
+                # 以下是原来逻辑 ------------------------------------------------------------------------------------
                 if not line or line.startswith(';'):
                     continue
                 if m := re.match(node_pattern, line):
