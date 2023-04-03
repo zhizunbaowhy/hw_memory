@@ -1,3 +1,6 @@
+"""
+    目前在mem_tr一起实现了, debug之后 无误程序在移植到此 封装为类,对象
+"""
 from newCFG.cfg import TCfg
 from newCFG.cfg import TCfg
 from newCFG.loadstore import LSProc
