@@ -174,6 +174,13 @@ class LSProc:
                 if ins.add_same:
                     lsunit.add_addr_offset(ins.add_3op)
                     # print(lsunit.addr_offset)
+        if ins.is_ls:
+            if lsunit.reg_target == ins.ls_reg_target:
+                if ins.name == "ldr":
+                    if ins.ls_reg_target == ins.ls_first_opperand:
+                        lsunit.add_addr_offset(ins.ls_addr_offset)
+
+
     
     @property
     def ls_table(self):
