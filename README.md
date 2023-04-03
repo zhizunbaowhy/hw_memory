@@ -19,3 +19,4 @@ oldCFG为原来面向过程编程的版本，目前已经弃用
 - cfg用于生成图结构和绘制对应的图像
 - loadstore在cfg生成之后对相应的指令进行分析
 - rw_condition用户读写分析
+- heat_analysis热度分析
