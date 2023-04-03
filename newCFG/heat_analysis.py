@@ -2,10 +2,12 @@ class loop_heat:
     def __init__(self,TCFG,LSProc,segmentReader) -> None:
         self.lsproc = LSProc
         self.lds_table = self.lsproc.ls_table
-        self.a=segmentReader.getbss()
-        self.b=segmentReader.getdata()
+        # self.a=segmentReader.getbss()
+        # self.b=segmentReader.getdata()
+        self.D=segmentReader.getbss()+segmentReader.getdata()
         self.tcfg=TCFG
         self.addr_length={i.final_addr : i.ins.ls_data_width for i in self.lds_table}
+
         ###以下变量用来承接结果
 
     def find_range(self,addr:int):
@@ -17,7 +19,9 @@ class loop_heat:
         for i in self.b:
             if int(addr)==i[2]:
                 return i[3]
+            
     def loop_heat_analysis(self):
+        self.D[-1][3] = self.D[0][2]
         for l in self.tcfg.loops:
             #print("{} (in {} children {}): {}->{} {}".format(l.name, l.father.name if l.father is not None else "None", [sub_l.name for sub_l in l.children], l.back_edge.src.name, l.back_edge.dst.name, [n.name for n in l.all_nodes]))
             l.back_edge.is_backEdge = True
@@ -42,10 +46,10 @@ class loop_heat:
             for i in node.storelist:
                 node.heat_st_result[i[1],self.find_range(i[1])]+=1
 
-        # for node in self.tcfg.all_nodes:
-        #     print(node.name)
-        #     print('load',node.heat_ld_result)
-        #     print('store',node.heat_st_result)
+        for node in self.tcfg.all_nodes:
+            print(node.name)
+            print('load',node.heat_ld_result)
+            print('store',node.heat_st_result)
         for l in self.tcfg.loops:
             print("{} (in {} children {}): {}->{} {}".format(l.name, l.father.name if l.father is not None else "None", [sub_l.name for sub_l in l.children], l.back_edge.src.name, l.back_edge.dst.name, [n.name for n in l.all_nodes]))
             l.back_edge.is_backEdge = True
@@ -65,209 +69,8 @@ class loop_heat:
             print(l.name,'ld_heat_analysis',l.loop_ld_heat,'st_heat_analysis',l.loop_st_heat)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# from cache_analysis.read_segment import segmentReader
-# from newCFG.heat_analysis import loop_heat
-# bread = segmentReader(r'C:\Users\13377\Desktop\hw-memory-master (1)\hw-memory-master\benchmarks\objdump-D\-D manytest.asm')
-# test=loop_heat(tcfg,lsproc,bread)
-# test.loop_heat_analysis()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    def UI_frontend(self):
+        """这个函数用来把现有的各个range的热度归并成一个页面上的热度 用lds的次数来定义"""
+        pass
+
+         
