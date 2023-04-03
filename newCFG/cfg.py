@@ -366,6 +366,7 @@ class TCfgLoop:
         self.__all_nodes: frozenset[TCfgNode] = frozenset(all_nodes)
         self.loop_ld_heat=dict()
         self.loop_st_heat=dict()
+        self.loop_heat=dict()  #这个就不分ld还是st了，因为最后热度就是相加
 
     @property
     def name(self):
