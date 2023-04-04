@@ -60,6 +60,8 @@ void InitializeMesh_2(void);
 int Mesh_dot(void);
 int CompareMesh(void);
 int SwapMesh(void);
+int ManiplateData1(void);
+int ComplexDataHandle(void);
 int LoadData(void);
 int StoreData(void);
 
@@ -93,7 +95,7 @@ int main(int argc, const char * argv[])
         ms4 = Mesh_dot();
     }
     
-    
+    ComplexDataHandle();
     StoreData();
         
     return 0;
@@ -203,6 +205,65 @@ int LoadData(void)
     
     return 0;
     
+}
+
+int ComplexDataHandle(void)
+{
+    int res = ManiplateData1();
+    res = ManiplateData1();
+    res = ManiplateData1();
+
+     return 0;
+}
+
+int ManiplateData1(void)
+{
+    ms1[1][1] = 20;
+    int temp = ms1[1][1];
+    ms1[1][1] = 30;
+    temp = ms1[1][1];
+    temp = ms1[1][1];
+    ms1[2][1] = 50;
+    ms1[2][1] = 60;
+    ms1[2][1] = 70;
+    temp = ms1[2][1];
+    temp = ms1[2][1];
+    ms1[2][1] = 99;
+    temp = ms1[2][1];
+    
+    ms1[1][2] = 40;
+    temp = ms1[1][1];
+    ms1[1][2] = 30;
+    temp = ms1[1][2];
+    temp = ms1[1][2];
+    ms1[1][2] = 50;
+    
+    return 0;
+}
+
+int ManiplateData2(void)
+{
+    ms2[1][1] = 20;
+    int temp = ms2[1][1];
+    ms2[1][1] = 30;
+    temp = ms2[1][1];
+    temp = ms2[1][1];
+    ms2[2][1] = 50;
+    ms2[2][1] = 60;
+    ms2[2][1] = 70;
+    temp = ms2[2][1];
+    temp = ms2[2][1];
+    ms2[2][1] = 99;
+    temp = ms2[2][1];
+
+    ms2[1][2] = 40;
+    temp = ms2[1][2];
+    ms2[1][2] = 30;
+    temp = ms2[1][2];
+    temp = ms2[1][2];
+    ms2[1][2] = 50;
+    
+    return 0;
 }
 
 int StoreData(void)
