@@ -277,6 +277,7 @@ class Instruction:
                         self.__immOffsetTypeProc(target_reg,pm,strOffset)
                     
                     elif is_regAft:
+                        self.__ls_target_num = 2
                         self.__ls_addr_mode = AddrMode.RegAft
 
                         temp = is_regAft.groups()
@@ -287,6 +288,7 @@ class Instruction:
 
                     
                     elif is_regShiftAft:
+                        self.__ls_target_num = 2
                         self.__ls_addr_mode = AddrMode.RegShiftAft
 
                         temp = is_regShiftAft.groups()
@@ -314,6 +316,7 @@ class Instruction:
                         self.__immOffsetTypeProc(target_reg,pm,strOffset)
 
                     elif is_regBef:
+                        self.__ls_target_num = 2
                         self.__ls_addr_mode = AddrMode.RegBef
 
                         temp = is_regBef.groups()
@@ -323,6 +326,7 @@ class Instruction:
                         self.__regOffsetPorc(target_reg1,target_reg2)
 
                     elif is_regShiftBef:
+                        self.__ls_target_num = 2
                         self.__ls_addr_mode = AddrMode.RegShiftBef
 
                         temp = is_regShiftBef.groups()
@@ -348,6 +352,7 @@ class Instruction:
                         self.__immOffsetTypeProc(target_reg,pm,strOffset)
 
                     elif is_regOffset:
+                        self.__ls_target_num = 2
                         self.__ls_addr_mode = AddrMode.RegOffset
 
                         temp = is_regOffset.groups()
@@ -357,6 +362,7 @@ class Instruction:
                         self.__regOffsetPorc(target_reg1,target_reg2)
 
                     elif is_regShift:
+                        self.__ls_target_num = 2
                         self.__ls_addr_mode = AddrMode.RegShift
 
                         temp = is_regShift.groups()

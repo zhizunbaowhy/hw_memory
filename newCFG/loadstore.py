@@ -1,8 +1,11 @@
 from queue import Queue
+import re
 
 class LSUnit:
 
     def __init__(self,ins,node):
+
+        
         self.__ins = ins
         self.__node = node
         self.__addr = self.__ins.addr.val()
@@ -11,7 +14,8 @@ class LSUnit:
         if self.target_num == 1:
             self.__reg_target = self.__ins.ls_reg_target
         else:
-            self.__reg_target_list = self.ins.ls_reg_target_list
+            self.reg_target_list = self.__ins.ls_reg_target_list
+            self.reg_target_list_num = self.target_num
         
 
         self.__addr_offset = self.__ins.ls_addr_offset
@@ -19,11 +23,13 @@ class LSUnit:
         self.__final_addr = 0
         self.__is_sp = False
         self.__local_offset = 0
-        
-        if self.__reg_target == "sp":
-            self.__is_find = True
-            self.__is_sp = True
-            self.__local_offset = self.__ins.local_offset
+        if self.target_num == 1:
+            if self.__reg_target == "sp":
+                self.__is_find = True
+                self.__is_sp = True
+                self.__local_offset = self.__ins.local_offset
+
+        self.re_num = re.compile(r"[0-9a-fA-F]*")
     
     @property
     def ins(self):
@@ -59,6 +65,9 @@ class LSUnit:
     def set_reg_target(self,addr):
         self.__reg_target = addr
 
+    
+    
+
     @property
     def addr_offset(self):
         return self.__addr_offset
@@ -69,15 +78,37 @@ class LSUnit:
     @property
     def final_addr(self):
         #给全局用的
-        if self.__is_find:
-            if self.__is_sp:
-                pass
-            else:
-                self.__final_addr = int(self.reg_target,16)
-                self.__final_addr += self.__addr_offset
+        if self.target_num == 1:
+            if self.__is_find:
+                if self.__is_sp:
+                    pass
+                else:
+                    self.__final_addr = int(self.reg_target,16)
+                    self.__final_addr += self.__addr_offset
 
-        self.__ins.set_final_addr(self.__final_addr)
-        return self.__final_addr
+            self.__ins.set_final_addr(self.__final_addr)
+            return self.__final_addr
+        else:
+            if self.__is_find:
+                tar_1 = self.reg_target_list[0]
+                tar_2 = self.reg_target_list[1][1]
+                
+                if self.__is_sp:
+                    
+                    is_num = re.match(self.re_num,tar_1)
+                    print(is_num)
+                    if is_num:
+                        self.__final_addr = int(tar_1,16)
+                        self.__final_addr += self.__addr_offset
+                        self.__ins.is_data_group = True
+                        self.__is_sp = False
+            
+            self.__ins.set_final_addr(self.__final_addr)
+            return self.__final_addr
+
+
+                    
+
     
     @property
     def local_offset(self):
@@ -159,29 +190,108 @@ class LSProc:
                             
 
     def __each_ins_prco(self,lsunit,ins):
-        if ins.is_mov:
-            if lsunit.reg_target == ins.mov_first_opperand:
-                lsunit.set_reg_target(ins.mov_target)
-                if ins.mov_target == "sp":
+        if lsunit.target_num == 1:
+            if ins.is_mov:
+                if lsunit.reg_target == ins.mov_first_opperand:
+                    lsunit.set_reg_target(ins.mov_target)
+                    if ins.mov_target == "sp":
+                        lsunit.set_is_find()
+                        lsunit.set_sp_true()
+            if ins.is_adrp:
+                if lsunit.reg_target == ins.adrp_first_opperand:
+                    lsunit.set_reg_target(ins.adrp_addr)
                     lsunit.set_is_find()
-                    lsunit.set_sp_true()
-        if ins.is_adrp:
-            if lsunit.reg_target == ins.adrp_first_opperand:
-                lsunit.set_reg_target(ins.adrp_addr)
-                lsunit.set_is_find()
-        if ins.is_add:
-            if lsunit.reg_target == ins.add_1op:
-                if ins.add_same:
-                    lsunit.add_addr_offset(ins.add_3op)
-                    # print(lsunit.addr_offset)
-        if ins.is_ls:
-            if lsunit.reg_target == ins.ls_reg_target:
+            if ins.is_add:
+                if lsunit.reg_target == ins.add_1op:
+                    if ins.add_same:
+                        lsunit.add_addr_offset(ins.add_3op)
+                        # print(lsunit.addr_offset)
+                    elif ins.add_imm:
+                        lsunit.set_reg_target(ins.add_2op)
+                        print(ins.add_3op)
+                        lsunit.add_addr_offset(ins.add_3op)
+            if ins.is_ls:
+                if lsunit.reg_target == ins.ls_reg_target:
+                    if ins.name == "ldr":
+                        if ins.ls_reg_target == ins.ls_first_opperand:
+                            lsunit.add_addr_offset(ins.ls_addr_offset)
+                        if lsunit.reg_target == ins.ls_first_opperand:
+                            if not ins.is_nsp:
+                                lsunit.reg_target = "sp about"
+                                lsunit.set_is_find()
+                                lsunit.set_sp_true()
+
+        else:
+            tar_1 = lsunit.reg_target_list[0]
+            tar_2 = lsunit.reg_target_list[1][1]
+            if ins.is_mov:
+                if tar_1 == ins.mov_first_opperand:
+                    lsunit.reg_target_list[0] = ins.mov_first_opperand
+                    if ins.mov_target == "sp":
+                        lsunit.set_sp_true()
+                        lsunit.reg_target_list_num -= 1
+                        self.target_group_set_find(lsunit)
+
+                if tar_2 == ins.mov_first_opperand:
+                    lsunit.reg_target_list[1][1] = ins.mov_first_opperand
+                    if ins.mov_target == "sp":
+                        lsunit.set_sp_true()
+                        lsunit.reg_target_list_num -= 1
+                        self.target_group_set_find(lsunit)
+            if ins.is_adrp:
+                if tar_1 == ins.adrp_first_opperand:
+                    lsunit.reg_target_list[0] = ins.adrp_addr
+                    lsunit.reg_target_list_num -= 1
+                    self.target_group_set_find(lsunit)
+                if tar_2 == ins.adrp_first_opperand:
+                    lsunit.reg_target_list[1][1] = ins.adrp_addr
+                    lsunit.reg_target_list_num -= 1
+                    self.target_group_set_find(lsunit)
+            if ins.is_add:
+                if tar_1 == ins.add_1op:
+                    if ins.add_same:
+                        lsunit.add_addr_offset(ins.add_3op)
+                        # print(lsunit.addr_offset)
+                    elif ins.add_imm:
+                        lsunit.reg_target_list[0] = ins.add_2op
+                        lsunit.reg_target_list_num -= 1
+                        self.target_group_set_find(lsunit)
+                        lsunit.add_addr_offset(ins.add_3op)
+                if tar_2 == ins.add_1op:
+                    if ins.add_same:
+                        lsunit.add_addr_offset(ins.add_3op)
+                        # print(lsunit.addr_offset)
+                    elif ins.add_imm:
+                        tar_2 = lsunit.reg_target_list[1][1] = ins.add_2op
+                        lsunit.reg_target_list_num -= 1
+                        self.target_group_set_find(lsunit)
+                        lsunit.add_addr_offset(ins.add_3op)
+            if ins.is_ls:
                 if ins.name == "ldr":
-                    if ins.ls_reg_target == ins.ls_first_opperand:
+                    if tar_1 == ins.ls_first_opperand:
                         lsunit.add_addr_offset(ins.ls_addr_offset)
+                    if tar_2 == ins.ls_first_opperand:
+                        lsunit.add_addr_offset(ins.ls_addr_offset)
+                    
+                    if tar_1 == ins.ls_first_opperand:
+                        if not ins.is_nsp:
+                            lsunit.reg_target_list[0] = "sp about"
+                            lsunit.reg_target_list_num -= 1
+                            self.target_group_set_find(lsunit)
+                            lsunit.set_sp_true()
+                    if tar_2 == ins.ls_first_opperand:
+                        if not ins.is_nsp:
+                            tar_2 = lsunit.reg_target_list[1][1] = "sp about"
+                            lsunit.reg_target_list_num -= 1
+                            self.target_group_set_find(lsunit)
+                            lsunit.set_sp_true()
 
 
-    
+    def target_group_set_find(self,lsunit):
+        if lsunit.reg_target_list_num == 0:
+            lsunit.set_is_find()
+
     @property
     def ls_table(self):
         return self.__ls_table
+    
