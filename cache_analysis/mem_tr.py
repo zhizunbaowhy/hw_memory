@@ -396,69 +396,130 @@ print(is_fixpoint, graph.it_number)
 
 # 根据loop找各个页的hit/miss情况
 # TODO 如果横跨了page 应该如何统计 ---> 生成page_range的时候就规定了页 4096 所以照旧分析即可
+# for loop in loop_list.values():
+#     # 找属于哪个loop
+#     loop_name = [key for key, value in loop_list.items() if value == loop]
+#     print(loop_name)
+#     for node in graph.all_nodes:
+#         if node.ident not in loop:
+#             continue
+#         print(node.ident)
+#         page_range = page_loop_access.get(loop_name[0]) # 得到具体这个loop的page
+#         # print(page_range)
+#
+#         for r, mb, hit in node.analysis_result():
+#             for tup in page_range:
+#                 if r[0] >= tup[0] and r[1] <= tup[1]:
+#                     print(int(tup[0]/4096))
+#                     print(r, mb, hit)
+#
+#
+# # Persistent分析
+# is_fixpoint = fixpoint(config, graph, 'persistent', **user_kwargs)  # Switch to `may` or `persistent`.
+# print(is_fixpoint, graph.it_number)
+#
+# for loop in loop_list.values():
+#     # 找属于哪个loop
+#     loop_name = [key for key, value in loop_list.items() if value == loop]
+#     print(loop_name)
+#     for node in graph.all_nodes:
+#         if node.ident not in loop:
+#             continue
+#         print(node.ident)
+#         page_range = page_loop_access.get(loop_name[0]) # 得到具体这个loop的page
+#         # print(page_range)
+#
+#         for r, mb, hit in node.analysis_result():
+#             for tup in page_range:
+#                 if r[0] >= tup[0] and r[1] <= tup[1]:
+#                     print(int(tup[0]/4096))
+#                     print(r, mb, hit)
+#
+#
+# # MAY 分析
+# is_fixpoint = fixpoint(config, graph, 'may', **user_kwargs)  # Switch to `may` or `persistent`.
+# print(is_fixpoint, graph.it_number)
+#
+# for loop in loop_list.values():
+#     # 找属于哪个loop
+#     loop_name = [key for key, value in loop_list.items() if value == loop]
+#     print(loop_name)
+#     for node in graph.all_nodes:
+#         if node.ident not in loop:
+#             continue
+#         print(node.ident)
+#         page_range = page_loop_access.get(loop_name[0]) # 得到具体这个loop的page
+#         # print(page_range)
+#
+#         for r, mb, hit in node.analysis_result():
+#             for tup in page_range:
+#                 if r[0] >= tup[0] and r[1] <= tup[1]:
+#                     print(int(tup[0]/4096))
+#                     print(r, mb, hit)
+#
+#
+# # TRUE FLASE 统计 按照loop ---> page 粒度
+# # TODO MUST找TRUE, 并delete 整个 e.g., (2052, 2056), (<MemBlk tag:0x0 idx:0x20>,), [TRUE] ---> Persistent找True
+# # TODO MUST --> if TRUE: (hit++)*loop_bound;  Persistent --> if TRUE: miss++, (hit++)*(loop_bound-1);  MAY --> if FALSE: (miss++)*loop_bound;  UC --> residue: 0.5*(miss++)*loop_bound, 0.5*(hit++)*loop_bound.
+#
+# for loop in loop_list.values():
+#     # 找属于哪个loop
+#     loop_name = [key for key, value in loop_list.items() if value == loop]
+#     print(loop_name)
+#     for node in graph.all_nodes:
+#         if node.ident not in loop:
+#             continue
+#         print(node.ident)
+#         page_range = page_loop_access.get(loop_name[0]) # 得到具体这个loop的page
+#         # print(page_range)
+#
+#         for r, mb, hit in node.analysis_result():
+#             for tup in page_range:
+#                 if tup[0] <= config.block2address(mb) <= tup[1]:
+#                     print(int(tup[0]/4096))
+#                     print(r, mb, hit)
+
+# 最终结果--------------------------------------------------------------------------------------------------------------------------------------------
+graph_must, graph_may, graph_pers = deepcopy(graph), deepcopy(graph), deepcopy(graph)
+
+fixpoint(config, graph_must, 'must', **user_kwargs)
+fixpoint(config, graph_may, 'may', **user_kwargs)
+fixpoint(config, graph_pers, 'persistent', **user_kwargs)
+
+mb_must_hit = list()
+mb_persistent = list()
+mb_must_miss = list()
+mb_uc = list()
 for loop in loop_list.values():
-    # 找属于哪个loop
     loop_name = [key for key, value in loop_list.items() if value == loop]
-    print(loop_name)
-    for node in graph.all_nodes:
-        if node.ident not in loop:
-            continue
-        print(node.ident)
-        page_range = page_loop_access.get(loop_name[0]) # 得到具体这个loop的page
-        # print(page_range)
+    page_range = page_loop_access.get(loop_name[0])
+    for tup in page_range:
+        for n_must, n_may, n_pers in zip(graph_must.all_nodes, graph_may.all_nodes, graph_pers.all_nodes):
+            if n_must.ident not in loop:
+                continue
+            for rlt_must, rlt_may, rlt_pers in zip(n_must.analysis_result(), n_may.analysis_result(), n_pers.analysis_result()):
+                # print(rlt_must[0])
+                for mb, must_f, may_f, pers_f in zip(rlt_must[1], rlt_must[2], rlt_may[2], rlt_pers[2]):
+                    # print(mb, must_f, may_f, pers_f)
+                    if tup[0] <= config.block2address(mb) < tup[1]:
+                        if must_f:
+                            mb_must_hit.append(mb)
+                        else:
+                            if pers_f:
+                                mb_persistent.append(mb)
+                            else:
+                                if not may_f:
+                                    mb_must_miss.append(mb)
+                                else:
+                                    mb_uc.append(mb)
 
-        for r, mb, hit in node.analysis_result():
-            for tup in page_range:
-                if r[0] >= tup[0] and r[1] <= tup[1]:
-                    print(int(tup[0]/4096))
-                    print(r, mb, hit)
+        print(loop_name, "--->", tup, "mb_must_hit: ", mb_must_hit)
+        print(loop_name, "--->", tup, "mb_persistent: ", mb_persistent)
+        print(loop_name, "--->", tup, "mb_must_miss: ", mb_must_miss)
+        print(loop_name, "--->", tup, "mb_uc: ", mb_uc)
+        mb_must_hit = list()
+        mb_persistent = list()
+        mb_must_miss = list()
+        mb_uc = list()
 
-
-# Persistent分析
-is_fixpoint = fixpoint(config, graph, 'persistent', **user_kwargs)  # Switch to `may` or `persistent`.
-print(is_fixpoint, graph.it_number)
-
-for loop in loop_list.values():
-    # 找属于哪个loop
-    loop_name = [key for key, value in loop_list.items() if value == loop]
-    print(loop_name)
-    for node in graph.all_nodes:
-        if node.ident not in loop:
-            continue
-        print(node.ident)
-        page_range = page_loop_access.get(loop_name[0]) # 得到具体这个loop的page
-        # print(page_range)
-
-        for r, mb, hit in node.analysis_result():
-            for tup in page_range:
-                if r[0] >= tup[0] and r[1] <= tup[1]:
-                    print(int(tup[0]/4096))
-                    print(r, mb, hit)
-
-
-# MAY 分析
-is_fixpoint = fixpoint(config, graph, 'may', **user_kwargs)  # Switch to `may` or `persistent`.
-print(is_fixpoint, graph.it_number)
-
-for loop in loop_list.values():
-    # 找属于哪个loop
-    loop_name = [key for key, value in loop_list.items() if value == loop]
-    print(loop_name)
-    for node in graph.all_nodes:
-        if node.ident not in loop:
-            continue
-        print(node.ident)
-        page_range = page_loop_access.get(loop_name[0]) # 得到具体这个loop的page
-        # print(page_range)
-
-        for r, mb, hit in node.analysis_result():
-            for tup in page_range:
-                if r[0] >= tup[0] and r[1] <= tup[1]:
-                    print(int(tup[0]/4096))
-                    print(r, mb, hit)
-
-
-# TRUE FLASE 统计 按照loop ---> page 粒度
-# TODO MUST找TRUE, 并delete 整个 e.g., (2052, 2056), (<MemBlk tag:0x0 idx:0x20>,), [TRUE] ---> Persistent找True
-# TODO MUST --> if TRUE: (hit++)*loop_bound;  Persistent --> if TRUE: miss++, (hit++)*(loop_bound-1);  MAY --> if FALSE: (miss++)*loop_bound;  UC --> residue: 0.5*(miss++)*loop_bound, 0.5*(hit++)*loop_bound.
-# 是真的实现不出来...
+#%%
