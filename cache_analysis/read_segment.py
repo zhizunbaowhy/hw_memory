@@ -124,6 +124,7 @@ class segmentReader:
 
 
 # segment = segmentReader(r'C:\Users\51777\Desktop\华为memory\test\objdump\-D manytest.asm')
+# segment = segmentReader(r'D:\workspace\Gitdocuments\hw-memory\benchmarks\final_benchmark\spec_benchD.asm')
 # segment.getbss()
 # bss = segment.getbss()
 # data = segment.getdata()
