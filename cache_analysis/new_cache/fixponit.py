@@ -109,6 +109,9 @@ class CacheConfig:
                             tag=(cache_addr >> self.set_index_len))
                 for cache_addr in range(addr_beg >> self.offset_len, ((addr_end - 1) >> self.offset_len) + 1)]
 
+    def block2address(self, mb: MemoryBlock):
+        return (mb.tag << (self.offset_len + self.set_index_len)) + (mb.set_index << self.offset_len) + 0
+
     def generate_set_state(self, evicted: bool):
         return CacheSetState(max_age=self.assoc, evicted=evicted)
 
@@ -215,9 +218,6 @@ def read_from_file(f: str) -> Tuple[CacheConfig, FixpointGraph, Dict[str, str]]:
     用 [] 匹配access
     用 : 匹配cache信息配置
     '''
-    # # 加一个匹配loop_list的正则
-    # loop_list_pattern = re.compile(r"{\s*[^}]*\s*}")
-
 
     basic_results, other_param = {'nodes': [], 'edges': [], 'access': dict()}, dict()
 
@@ -227,12 +227,6 @@ def read_from_file(f: str) -> Tuple[CacheConfig, FixpointGraph, Dict[str, str]]:
         for idx, ln in enumerate(fp.readlines()):
             try:
                 line = ln.strip()
-                # # 添加匹配loop_list
-                # matches = loop_list_pattern(line)
-                # for match in matches:
-                #     self.loop = eval(match)
-
-                # 以下是原来逻辑 ------------------------------------------------------------------------------------
                 if not line or line.startswith(';'):
                     continue
                 if m := re.match(node_pattern, line):
@@ -300,3 +294,4 @@ def fixpoint(config: CacheConfig, graph: FixpointGraph, analysis_type: str, **kw
     return all(graph.fixpoint_set(set_idx, join_func=getattr(SetStateOperation, f"{analysis_type}_join"),
                                   update_func=getattr(SetStateOperation, f"{analysis_type}_update"),
                                   max_it=kwargs.get('max_iter', int(2 ** 31))) for set_idx in considered_set)
+
