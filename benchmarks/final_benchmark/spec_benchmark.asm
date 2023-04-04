@@ -195,9 +195,9 @@ Disassembly of section .text:
   400864:	9114a000 	add	x0, x0, #0x528
   400868:	b9000001 	str	w1, [x0]
   40086c:	940001ba 	bl	400f54 <ComplexDataHandle>
-  400870:	52800000 	mov	w0, #0x0                   	// #0
-  400874:	a8c37bfd 	ldp	x29, x30, [sp], #48
-  400878:	d65f03c0 	ret
+  400870:	9400025c 	bl	4011e0 <StoreData>
+  400874:	52800000 	mov	w0, #0x0                   	// #0
+  400878:	a8c37bfd 	ldp	x29, x30, [sp], #48
   40087c:	d65f03c0 	ret
 
 0000000000400880 <InitializeMesh_1>:
@@ -240,7 +240,7 @@ Disassembly of section .text:
   400910:	b9801fe1 	ldrsw	x1, [sp, #28]
   400914:	aa0103e0 	mov	x0, x1
   400918:	d37ff800 	lsl	x0, x0, #1
-  40091c:	8b010000 	add	x0, x0,  
+  40091c:	8b010000 	add	x0, x0, x1
   400920:	d37df000 	lsl	x0, x0, #3
   400924:	8b010000 	add	x0, x0, x1
   400928:	d37ef400 	lsl	x0, x0, #2
@@ -784,4 +784,106 @@ Disassembly of section .text:
   401150:	b9000fe0 	str	w0, [sp, #12]
   401154:	90000140 	adrp	x0, 429000 <ms1+0x8f98>
   401158:	9132a000 	add	x0, x0, #0xca8
-  4011
+  40115c:	52800c61 	mov	w1, #0x63                  	// #99
+  401160:	b9032401 	str	w1, [x0, #804]
+  401164:	90000140 	adrp	x0, 429000 <ms1+0x8f98>
+  401168:	9132a000 	add	x0, x0, #0xca8
+  40116c:	b9432400 	ldr	w0, [x0, #804]
+  401170:	b9000fe0 	str	w0, [sp, #12]
+  401174:	90000140 	adrp	x0, 429000 <ms1+0x8f98>
+  401178:	9132a000 	add	x0, x0, #0xca8
+  40117c:	52800501 	mov	w1, #0x28                  	// #40
+  401180:	b9019801 	str	w1, [x0, #408]
+  401184:	90000140 	adrp	x0, 429000 <ms1+0x8f98>
+  401188:	9132a000 	add	x0, x0, #0xca8
+  40118c:	b9419800 	ldr	w0, [x0, #408]
+  401190:	b9000fe0 	str	w0, [sp, #12]
+  401194:	90000140 	adrp	x0, 429000 <ms1+0x8f98>
+  401198:	9132a000 	add	x0, x0, #0xca8
+  40119c:	528003c1 	mov	w1, #0x1e                  	// #30
+  4011a0:	b9019801 	str	w1, [x0, #408]
+  4011a4:	90000140 	adrp	x0, 429000 <ms1+0x8f98>
+  4011a8:	9132a000 	add	x0, x0, #0xca8
+  4011ac:	b9419800 	ldr	w0, [x0, #408]
+  4011b0:	b9000fe0 	str	w0, [sp, #12]
+  4011b4:	90000140 	adrp	x0, 429000 <ms1+0x8f98>
+  4011b8:	9132a000 	add	x0, x0, #0xca8
+  4011bc:	b9419800 	ldr	w0, [x0, #408]
+  4011c0:	b9000fe0 	str	w0, [sp, #12]
+  4011c4:	90000140 	adrp	x0, 429000 <ms1+0x8f98>
+  4011c8:	9132a000 	add	x0, x0, #0xca8
+  4011cc:	52800641 	mov	w1, #0x32                  	// #50
+  4011d0:	b9019801 	str	w1, [x0, #408]
+  4011d4:	52800000 	mov	w0, #0x0                   	// #0
+  4011d8:	910043ff 	add	sp, sp, #0x10
+  4011dc:	d65f03c0 	ret
+
+00000000004011e0 <StoreData>:
+  4011e0:	a9be7bfd 	stp	x29, x30, [sp, #-32]!
+  4011e4:	910003fd 	mov	x29, sp
+  4011e8:	f9000bff 	str	xzr, [sp, #16]
+  4011ec:	90000000 	adrp	x0, 401000 <ManiplateData1+0x80>
+  4011f0:	910d8001 	add	x1, x0, #0x360
+  4011f4:	90000000 	adrp	x0, 401000 <ManiplateData1+0x80>
+  4011f8:	910bc000 	add	x0, x0, #0x2f0
+  4011fc:	97fffd21 	bl	400680 <fopen@plt>
+  401200:	f9000be0 	str	x0, [sp, #16]
+  401204:	f9400be3 	ldr	x3, [sp, #16]
+  401208:	d28000e2 	mov	x2, #0x7                   	// #7
+  40120c:	d2800021 	mov	x1, #0x1                   	// #1
+  401210:	90000000 	adrp	x0, 401000 <ManiplateData1+0x80>
+  401214:	910da000 	add	x0, x0, #0x368
+  401218:	97fffd2a 	bl	4006c0 <fwrite@plt>
+  40121c:	b9001fff 	str	wzr, [sp, #28]
+  401220:	1400001d 	b	401294 <StoreData+0xb4>
+  401224:	b9001bff 	str	wzr, [sp, #24]
+  401228:	14000015 	b	40127c <StoreData+0x9c>
+  40122c:	f00000e0 	adrp	x0, 420000 <__libc_start_main@GLIBC_2.34>
+  401230:	9101a002 	add	x2, x0, #0x68
+  401234:	b9801be3 	ldrsw	x3, [sp, #24]
+  401238:	b9801fe1 	ldrsw	x1, [sp, #28]
+  40123c:	aa0103e0 	mov	x0, x1
+  401240:	d37ff800 	lsl	x0, x0, #1
+  401244:	8b010000 	add	x0, x0, x1
+  401248:	d37df000 	lsl	x0, x0, #3
+  40124c:	8b010000 	add	x0, x0, x1
+  401250:	d37ef400 	lsl	x0, x0, #2
+  401254:	8b030000 	add	x0, x0, x3
+  401258:	b8607840 	ldr	w0, [x2, x0, lsl #2]
+  40125c:	2a0003e2 	mov	w2, w0
+  401260:	90000000 	adrp	x0, 401000 <ManiplateData1+0x80>
+  401264:	910dc001 	add	x1, x0, #0x370
+  401268:	f9400be0 	ldr	x0, [sp, #16]
+  40126c:	97fffd1d 	bl	4006e0 <fprintf@plt>
+  401270:	b9401be0 	ldr	w0, [sp, #24]
+  401274:	11000400 	add	w0, w0, #0x1
+  401278:	b9001be0 	str	w0, [sp, #24]
+  40127c:	b9401be0 	ldr	w0, [sp, #24]
+  401280:	71018c1f 	cmp	w0, #0x63
+  401284:	54fffd4d 	b.le	40122c <StoreData+0x4c>
+  401288:	b9401fe0 	ldr	w0, [sp, #28]
+  40128c:	11000400 	add	w0, w0, #0x1
+  401290:	b9001fe0 	str	w0, [sp, #28]
+  401294:	b9401fe0 	ldr	w0, [sp, #28]
+  401298:	71018c1f 	cmp	w0, #0x63
+  40129c:	54fffc4d 	b.le	401224 <StoreData+0x44>
+  4012a0:	f9400be3 	ldr	x3, [sp, #16]
+  4012a4:	d2800042 	mov	x2, #0x2                   	// #2
+  4012a8:	d2800021 	mov	x1, #0x1                   	// #1
+  4012ac:	90000000 	adrp	x0, 401000 <ManiplateData1+0x80>
+  4012b0:	910de000 	add	x0, x0, #0x378
+  4012b4:	97fffd03 	bl	4006c0 <fwrite@plt>
+  4012b8:	f9400be0 	ldr	x0, [sp, #16]
+  4012bc:	97fffced 	bl	400670 <fclose@plt>
+  4012c0:	52800000 	mov	w0, #0x0                   	// #0
+  4012c4:	a8c27bfd 	ldp	x29, x30, [sp], #32
+  4012c8:	d65f03c0 	ret
+
+Disassembly of section .fini:
+
+00000000004012cc <_fini>:
+  4012cc:	d503201f 	nop
+  4012d0:	a9bf7bfd 	stp	x29, x30, [sp, #-16]!
+  4012d4:	910003fd 	mov	x29, sp
+  4012d8:	a8c17bfd 	ldp	x29, x30, [sp], #16
+  4012dc:	d65f03c0 	ret
