@@ -207,6 +207,7 @@ class Instruction:
         self.__is_nsp = False#用于判断是否是sp寄存器
         self.__ls_handle = False
         self.__find_target = False
+        self.is_data_group = False#用于判断是否需要读入一个数组
 
         self.__ls_addr_mode = None
         self.__ls_data_width = 32
@@ -219,6 +220,7 @@ class Instruction:
         #final_addr会在ls分析之后设置，是可以用于交付的值
         self.__ls_final_addr = 0
         self.__ls_local_offset = 0
+        self.ls_final_addr = 0
 
         is_loadstore = re.match(self.__loadstore_cpat,self.__name)
         if is_loadstore:
@@ -276,9 +278,24 @@ class Instruction:
                     
                     elif is_regAft:
                         self.__ls_addr_mode = AddrMode.RegAft
+
+                        temp = is_regAft.groups()
+                        target_reg1 = temp[0]
+                        target_reg2 = [temp[1],temp[2]]
+
+                        self.__regOffsetPorc(target_reg1,target_reg2)
+
                     
                     elif is_regShiftAft:
                         self.__ls_addr_mode = AddrMode.RegShiftAft
+
+                        temp = is_regShiftAft.groups()
+                        target_reg1 = temp[0]
+                        target_reg2 = [temp[1],temp[2]]
+
+                        self.__regOffsetPorc(target_reg1,target_reg2)
+
+                        
                 
                 elif is_bracket_upgrade:
 
@@ -299,8 +316,20 @@ class Instruction:
                     elif is_regBef:
                         self.__ls_addr_mode = AddrMode.RegBef
 
+                        temp = is_regBef.groups()
+                        target_reg1 = temp[0]
+                        target_reg2 = [temp[1],temp[2]]
+
+                        self.__regOffsetPorc(target_reg1,target_reg2)
+
                     elif is_regShiftBef:
                         self.__ls_addr_mode = AddrMode.RegShiftBef
+
+                        temp = is_regShiftBef.groups()
+                        target_reg1 = temp[0]
+                        target_reg2 = [temp[1],temp[2]]
+
+                        self.__regOffsetPorc(target_reg1,target_reg2)
                 
                 elif is_bracket:
 
@@ -321,15 +350,26 @@ class Instruction:
                     elif is_regOffset:
                         self.__ls_addr_mode = AddrMode.RegOffset
 
+                        temp = is_regOffset.groups()
+                        target_reg1 = temp[0]
+                        target_reg2 = [temp[1],temp[2]]
+
+                        self.__regOffsetPorc(target_reg1,target_reg2)
+
                     elif is_regShift:
                         self.__ls_addr_mode = AddrMode.RegShift
+
+                        temp = is_regShift.groups()
+                        target_reg1 = temp[0]
+                        target_reg2 = [temp[1],temp[2]]
+
+                        self.__regOffsetPorc(target_reg1,target_reg2)
 
     def __is_sp(self,matchworld):
         re_sp = re.match(self.__ls_sp_cpat,matchworld)
         if re_sp:
             self.__is_nsp = True
-            
-        
+                  
     def __immOffsetTypeProc(self,reg_target,offset_pm,offset_str):
         self.__ls_reg_target = reg_target
         pm = offset_pm
@@ -351,6 +391,17 @@ class Instruction:
             self.__ls_local_offset += self.__ls_addr_offset
         else:
             self.__is_nsp = True
+
+    def __regOffsetPorc(self,reg_target1,reg_target2):
+        self.__ls_reg_target_list.append(reg_target1)
+        self.__ls_reg_target_list.append(reg_target2)
+        pass
+
+    def __regShiftPorc(self,reg_target1,reg_target2):
+        self.__ls_reg_target_list.append(reg_target1)
+        self.__ls_reg_target_list.append(reg_target2)
+        pass
+
 
     @property
     def is_ls(self):
@@ -475,6 +526,7 @@ class Instruction:
     def __add_identity(self):
         self.__is_add = False
         self.__add_same = False
+        self.__add_imm = False
         self.__add_1op = None
         self.__add_2op = None
         self.__add_3op = None
@@ -495,6 +547,7 @@ class Instruction:
 
                 re_imm = re.match(self.__ls_immOffset_cpat,self.__add_3op)
                 if re_imm:
+                    self.__add_imm = True
                     temp = re_imm.groups()[0]
                     if temp[0:2] == "0x":
                         self.__add_3op = int(temp,16)
@@ -508,6 +561,10 @@ class Instruction:
     @property
     def add_same(self):
         return self.__add_same
+    
+    @property
+    def add_imm(self):
+        return self.__add_imm
     
     @property
     def add_1op(self):
