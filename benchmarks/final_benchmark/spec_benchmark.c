@@ -210,8 +210,7 @@ int LoadData(void)
 int ComplexDataHandle(void)
 {
     int res = ManiplateData1();
-    res = ManiplateData1();
-    res = ManiplateData1();
+    res = ManiplateData2();
 
      return 0;
 }
@@ -230,7 +229,7 @@ int ManiplateData1(void)
     temp = ms1[2][1];
     ms1[2][1] = 99;
     temp = ms1[2][1];
-    
+
     ms1[1][2] = 40;
     temp = ms1[1][1];
     ms1[1][2] = 30;
