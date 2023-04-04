@@ -29,7 +29,7 @@ class LSUnit:
                 self.__is_sp = True
                 self.__local_offset = self.__ins.local_offset
 
-        self.re_num = re.compile(r"[0-9a-fA-F]*")
+        self.re_hex_addr = re.compile(r"[0-9a-fA-F]{1,}")
     
     @property
     def ins(self):
@@ -95,10 +95,17 @@ class LSUnit:
                 
                 if self.__is_sp:
                     
-                    is_num = re.match(self.re_num,tar_1)
-                    print(is_num)
-                    if is_num:
+                    is_hex_addr = re.match(self.re_hex_addr,tar_1)
+                    
+                    if is_hex_addr:
                         self.__final_addr = int(tar_1,16)
+                        self.__final_addr += self.__addr_offset
+                        self.__ins.is_data_group = True
+                        self.__is_sp = False
+
+                    is_hex_addr = re.match(self.re_hex_addr,tar_2)
+                    if is_hex_addr:
+                        self.__final_addr = int(tar_2,16)
                         self.__final_addr += self.__addr_offset
                         self.__ins.is_data_group = True
                         self.__is_sp = False
@@ -126,6 +133,8 @@ class LSProc:
 
         self.__tcfg_nodes = cfg_list
         self.__ls_table = list()
+
+        self.re_num = re.compile(r":[1-9]\d*")
 
 
         for node in self.__tcfg_nodes:
@@ -204,7 +213,8 @@ class LSProc:
             if ins.is_add:
                 if lsunit.reg_target == ins.add_1op:
                     if ins.add_same:
-                        lsunit.add_addr_offset(ins.add_3op)
+                        if isinstance(ins.add_3op,int):
+                            lsunit.add_addr_offset(ins.add_3op)
                         # print(lsunit.addr_offset)
                     elif ins.add_imm:
                         lsunit.set_reg_target(ins.add_2op)
@@ -212,7 +222,7 @@ class LSProc:
                         lsunit.add_addr_offset(ins.add_3op)
             if ins.is_ls:
                 if lsunit.reg_target == ins.ls_reg_target:
-                    if ins.name == "ldr":
+                    if ins.name in ('ldr', 'ldrsw'):
                         if ins.ls_reg_target == ins.ls_first_opperand:
                             lsunit.add_addr_offset(ins.ls_addr_offset)
                         if lsunit.reg_target == ins.ls_first_opperand:
@@ -250,7 +260,8 @@ class LSProc:
             if ins.is_add:
                 if tar_1 == ins.add_1op:
                     if ins.add_same:
-                        lsunit.add_addr_offset(ins.add_3op)
+                        if isinstance(ins.add_3op,int):
+                            lsunit.add_addr_offset(ins.add_3op)
                         # print(lsunit.addr_offset)
                     elif ins.add_imm:
                         lsunit.reg_target_list[0] = ins.add_2op
@@ -259,7 +270,8 @@ class LSProc:
                         lsunit.add_addr_offset(ins.add_3op)
                 if tar_2 == ins.add_1op:
                     if ins.add_same:
-                        lsunit.add_addr_offset(ins.add_3op)
+                        if isinstance(ins.add_3op,int):
+                            lsunit.add_addr_offset(ins.add_3op)
                         # print(lsunit.addr_offset)
                     elif ins.add_imm:
                         tar_2 = lsunit.reg_target_list[1][1] = ins.add_2op
@@ -267,7 +279,7 @@ class LSProc:
                         self.target_group_set_find(lsunit)
                         lsunit.add_addr_offset(ins.add_3op)
             if ins.is_ls:
-                if ins.name == "ldr":
+                if ins.name in ('ldr', 'ldrsw'):
                     if tar_1 == ins.ls_first_opperand:
                         lsunit.add_addr_offset(ins.ls_addr_offset)
                     if tar_2 == ins.ls_first_opperand:
