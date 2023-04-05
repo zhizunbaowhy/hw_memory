@@ -416,8 +416,8 @@ class TCfg:
                 lb_src, lb_dst, bound = line.split()
                 bound_mapping[(lb_src, lb_dst)] = int(bound)
         for lp in self.__loops:
-            if (b := bound_mapping.get(((e := lp.back_edge).src, e.dst), None)) is None:
-                raise KeyError(f"Cannot find loop bound for loop {lp.name}:{lp.all_nodes} with back edge {lp.back_edge.src}-{lp.back_edge.dst}.")
+            if (b := bound_mapping.get(((e := lp.back_edge).src.name, e.dst.name), None)) is None:
+                raise KeyError(f"Cannot find loop bound for loop {lp.name}:{lp.all_nodes} with back edge {lp.back_edge.src.name}-{lp.back_edge.dst.name}.")
             lp.bound = b
 
     def build_tcfg(self):
