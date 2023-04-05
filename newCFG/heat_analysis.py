@@ -45,28 +45,28 @@ class loop_heat:
                     node.heat_ld_result[i[1],i[1]+int(self.addr_length[i[1]]/8)]=0
                 elif self.addr_bool[i[1]]==True:
                     a,b=self.find_range(i[1])
-                    for j in range(a,b,4):
+                    for j in range(a,b,self.page_size):
                         node.heat_ld_result[j,j+4]=0
             for i in node.loadlist:
                 if self.addr_bool[i[1]]==False:
                     node.heat_ld_result[i[1],i[1]+int(self.addr_length[i[1]]/8)]+=1
                 elif self.addr_bool[i[1]]==True:
                     a,b=self.find_range(i[1])
-                    for j in range(a,b,4):
+                    for j in range(a,b,self.page_size):
                         node.heat_ld_result[j,j+4]+=1
             for i in node.storelist:
                 if self.addr_bool[i[1]]==False:
                     node.heat_st_result[i[1],i[1]+int(self.addr_length[i[1]]/8)]=0
                 elif self.addr_bool[i[1]]==True:
                     a,b=self.find_range(i[1])
-                    for j in range(a,b,4):
+                    for j in range(a,b,self.page_size):
                         node.heat_st_result[j,j+4]=0  
             for i in node.storelist:
                 if self.addr_bool[i[1]]==False:
                     node.heat_st_result[i[1],i[1]+int(self.addr_length[i[1]]/8)]+=1
                 elif self.addr_bool[i[1]]==True:
                     a,b=self.find_range(i[1])
-                    for j in range(a,b,4):
+                    for j in range(a,b,self.page_size):
                         node.heat_st_result[j,j+4]+=1
             #print(node.name,'####',node.heat_ld_result,'######',node.heat_st_result)
 
