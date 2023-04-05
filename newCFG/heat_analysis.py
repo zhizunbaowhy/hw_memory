@@ -1,8 +1,11 @@
+from cache_analysis.read_segment import segmentReader
+
 class loop_heat:
-    def __init__(self,TCFG,LSProc,segmentReader) -> None:
+    def __init__(self,TCFG,LSProc,filepath) -> None:
         self.lsproc = LSProc
         self.lds_table = self.lsproc.ls_table
-        self.D=segmentReader.getbss()+segmentReader.getdata()
+        self.bread=segmentReader(filepath)
+        self.D=self.bread.getbss()+self.bread.getdata()
         self.tcfg=TCFG
         self.addr_bool={i.final_addr : i.ins.is_data_group for i in self.lds_table}
         self.addr_length={i.final_addr : i.ins.ls_data_width for i in self.lds_table}
@@ -106,11 +109,7 @@ class loop_heat:
             self.lobounds[l.name]=l.bound
         for l in self.heat_result:
             for key in l[1].keys():
-                l[1][key]=l[1][key]*self.lobounds[l[0]]
-    def show(self):
-        print('这是最终的结果')
-        print(self.heat_result) 
-        print(self.lobounds)
+                l[1][key]=l[1][key]*self.lobounds[l[0]]        
     def find_page(self,pagestart,pageend,figure):  #这个函数用来确认这个range访问了哪个页面
         temp=list()   
         if pagestart // self.page_size==pageend // self.page_size:
@@ -119,3 +118,6 @@ class loop_heat:
             for i in range(pagestart,pageend):
                 temp.append([i //self.page_size,figure])
         return temp
+    def do_it(self):
+        self.loop_heat_analysis()
+        return self.heat_result
