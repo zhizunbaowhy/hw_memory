@@ -1,4 +1,5 @@
-fp = r"D:\workspace\Gitdocuments\hw-memory\benchmarks\old_benchmark\spec_example\spec2006_470.lbm\lbm_part.asm"
+# fp = r"D:\workspace\Gitdocuments\hw-memory\benchmarks\old_benchmark\spec_example\spec2006_470.lbm\lbm_part.asm"
+fp = r"D:\workspace\Gitdocuments\hw-memory\benchmarks\final_benchmark\spec_benchmark.asm"
 from cache_analysis import read_segment
 
 # fp = r"C:\Users\51777\Desktop\华为memory\test\objdump\-dmanytest.asm"
@@ -132,7 +133,7 @@ lds_table = lsproc.ls_table
 
 for i in lds_table:
     print("node", i.node.name, "指令", i.ins.tokens, "是否是SP", i.is_sp, "指令地址", i.ins.addr.val(), "访存地址",
-          i.final_addr, "数据宽度", i.ins.ls_data_width, "访存类型", i.ins.ls_addr_mode)
+          i.final_addr, "数据宽度", i.ins.ls_data_width, "访存类型", i.ins.ls_addr_mode, "是否加入数组", i.ins.is_data_group)
 
 rwproc = RWProc(lds_table)
 
@@ -146,12 +147,12 @@ mem_ls = []
 for i in lds_table:
     if i.is_sp is False:
         # node + address(string) + address(int) + load/store address(int) + data width(Byte=bit/8)
-        mem_ls.append([i.node.name] + [i.ins.tokens[0]] + [i.ins.addr.val()] + [i.final_addr] + [int(i.ins.ls_data_width/8)] + [str(i.ins.ls_addr_mode)])
+        mem_ls.append([i.node.name] + [i.ins.tokens[0]] + [i.ins.addr.val()] + [i.final_addr] + [int(i.ins.ls_data_width/8)] + [str(i.ins.is_data_group)])
 # print(mem_ls)
 # print(mem_ls[0][2])
 # 如果AddressMode是寄存器则赋值 -1
 for item in mem_ls:
-    if item[5] == "AddrMode.Reg": # TODO 这里具体是不是AddrMode.Reg还需要再看
+    if item[5] == "True": # TODO 这里具体是不是AddrMode.Reg还需要再看
         item[4] = -1
 # print(mem_ls)
 
@@ -187,7 +188,8 @@ for n in range(len(mem_ls)):
 # print(mem_node)
 
 # 在这里提前获得.bss & .data segment信息
-segment = segmentReader(r'C:\Users\51777\Desktop\华为memory\test\objdump\-D manytest.asm')
+# segment = segmentReader(r'C:\Users\51777\Desktop\华为memory\test\objdump\-D manytest.asm')
+segment = segmentReader(r'D:\workspace\Gitdocuments\hw-memory\benchmarks\final_benchmark\spec_benchD.asm')
 bss = segment.getbss()
 data = segment.getdata()
 # 将.bss 和 .data 合成一个 一般是 .data在前 .bss在后; 但是为了方便处理.data的最后一个数据长度,将其反过来
@@ -490,6 +492,9 @@ mb_must_hit = list()
 mb_persistent = list()
 mb_must_miss = list()
 mb_uc = list()
+loop_bound = 1
+END = list()
+cache_risk = {}
 for loop in loop_list.values():
     loop_name = [key for key, value in loop_list.items() if value == loop]
     page_range = page_loop_access.get(loop_name[0])
@@ -513,13 +518,18 @@ for loop in loop_list.values():
                                 else:
                                     mb_uc.append(mb)
 
-        print(loop_name, "--->", tup, "mb_must_hit: ", mb_must_hit)
-        print(loop_name, "--->", tup, "mb_persistent: ", mb_persistent)
-        print(loop_name, "--->", tup, "mb_must_miss: ", mb_must_miss)
-        print(loop_name, "--->", tup, "mb_uc: ", mb_uc)
+        print(loop_name, "--->", tup, "mb_must_hit: ", mb_must_hit, len(mb_must_hit))
+        print(loop_name, "--->", tup, "mb_persistent: ", mb_persistent, len(mb_persistent))
+        print(loop_name, "--->", tup, "mb_must_miss: ", mb_must_miss, len(mb_must_miss))
+        print(loop_name, "--->", tup, "mb_uc: ", mb_uc, len(mb_uc))
+        # print(loop_name, "ratio--->")
+        # END.append(loop_name + [int(tup[0]/4096)] +["must_hit: ", len(mb_must_hit), "persistent: ", len(mb_persistent), "must_miss: ", len(mb_must_miss), "uc: ", len(mb_uc)])
+        # loop_bound默认是1的计算结果
+        END.append([tuple(loop_name), int(tup[0]/4096), float( (float(len(mb_must_hit)*loop_bound) + float(len(mb_persistent)*(loop_bound-1)) + float(0.5*len(mb_uc)*loop_bound)) / (float(len(mb_persistent)*1) + float(len(mb_must_miss)*loop_bound) + float(0.5*len(mb_uc)*loop_bound)) ) ])
         mb_must_hit = list()
         mb_persistent = list()
         mb_must_miss = list()
         mb_uc = list()
 
+print(END)
 #%%
