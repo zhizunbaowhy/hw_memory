@@ -45,29 +45,25 @@ class loop_heat:
                     node.heat_ld_result[i[1],i[1]+int(self.addr_length[i[1]]/8)]=0
                 elif self.addr_bool[i[1]]==True:
                     a,b=self.find_range(i[1])
-                    for j in range(a,b,self.page_size):
-                        node.heat_ld_result[j,j+4]=0
+                    node.heat_ld_result[a,b]=0
             for i in node.loadlist:
                 if self.addr_bool[i[1]]==False:
                     node.heat_ld_result[i[1],i[1]+int(self.addr_length[i[1]]/8)]+=1
                 elif self.addr_bool[i[1]]==True:
                     a,b=self.find_range(i[1])
-                    for j in range(a,b,self.page_size):
-                        node.heat_ld_result[j,j+4]+=1
+                    node.heat_ld_result[a,b]+=1
             for i in node.storelist:
                 if self.addr_bool[i[1]]==False:
                     node.heat_st_result[i[1],i[1]+int(self.addr_length[i[1]]/8)]=0
                 elif self.addr_bool[i[1]]==True:
                     a,b=self.find_range(i[1])
-                    for j in range(a,b,self.page_size):
-                        node.heat_st_result[j,j+4]=0  
+                    node.heat_st_result[a,b]=0  
             for i in node.storelist:
                 if self.addr_bool[i[1]]==False:
                     node.heat_st_result[i[1],i[1]+int(self.addr_length[i[1]]/8)]+=1
                 elif self.addr_bool[i[1]]==True:
                     a,b=self.find_range(i[1])
-                    for j in range(a,b,self.page_size):
-                        node.heat_st_result[j,j+4]+=1
+                    node.heat_st_result[a,b]+=1
             #print(node.name,'####',node.heat_ld_result,'######',node.heat_st_result)
 
         for l in self.tcfg.loops:
@@ -115,8 +111,10 @@ class loop_heat:
         if pagestart // self.page_size==pageend // self.page_size:
             temp.append([pagestart//self.page_size,figure])
         else:
-            for i in range(pagestart,pageend):
-                temp.append([i //self.page_size,figure])
+            aaa=pagestart//self.page_size
+            bbb=((pageend-1)//self.page_size)+1
+            for i in range(aaa,bbb+1):
+                temp.append([i,figure])
         return temp
     def do_it(self):
         self.loop_heat_analysis()
