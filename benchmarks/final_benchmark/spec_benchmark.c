@@ -79,6 +79,7 @@ int Mesh_dot(void);
 int CompareMesh(void);
 int SwapMesh(void);
 int ManiplateData1(void);
+int ManiplateData2(void);
 int ComplexDataHandle(void);
 int LoadData(void);
 int StoreData(void);
@@ -130,6 +131,13 @@ void InitializeMesh_1(void)
                 
                 ms1[x][y] = random();
                 int temp = ms1[x][y];
+                temp = ms1[x][y];
+                temp = ms1[x][y];
+                ms1[x][y] = random();
+                ms1[x][y] = random();
+                ms1[x][y] = random();
+                temp = ms1[x][y];
+
                 if(ms1[x][y]>100007)
                 {
                     ms1[x][y] %= MOD;
@@ -147,6 +155,16 @@ void InitializeMesh_2(void)
             {
                 ms2[x][y] = random();
                 int temp = ms2[x][y];
+                temp = ms2[x][y];
+                temp = ms2[x][y];
+                temp = ms2[x][y];
+                ms2[x][y] = random();
+                ms2[x][y] = random();
+                ms2[x][y] = random();
+                temp = ms2[x][y];
+
+
+
                 if(ms2[x][y]>100007)
                 {
                     ms2[x][y] %= MOD;
