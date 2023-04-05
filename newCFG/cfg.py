@@ -364,6 +364,9 @@ class TCfgLoop:
         self.__tail: TCfgNode = tail
         self.__back_edge: TCfgEdge = back_edge
         self.__all_nodes: frozenset[TCfgNode] = frozenset(all_nodes)
+
+        self.bound = 0
+
         self.loop_ld_heat=dict()
         self.loop_st_heat=dict()
         self.loop_heat=dict()  #这个就不分ld还是st了，因为最后热度就是相加
@@ -405,6 +408,17 @@ class TCfg:
         self.__nodes: List[TCfgNode] = list()
         self.__edges: List[TCfgEdge] = list()
         self.__loops: List[TCfgLoopHrchy] = list()
+
+    def add_loop_bound(self, file_name: str):
+        bound_mapping = dict()
+        with open(file_name, "r", encoding='utf-8') as fp:
+            for line in fp.readlines():
+                lb_src, lb_dst, bound = line.split()
+                bound_mapping[(lb_src, lb_dst)] = int(bound)
+        for lp in self.__loops:
+            if (b := bound_mapping.get(((e := lp.back_edge).src, e.dst), None)) is None:
+                raise KeyError(f"Cannot find loop bound for loop {lp.name}:{lp.all_nodes} with back edge {lp.back_edge.src}-{lp.back_edge.dst}.")
+            lp.bound = b
 
     def build_tcfg(self):
         self.__build_tcfg()
