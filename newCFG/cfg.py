@@ -431,9 +431,9 @@ class TCfg:
         for lp in self.__loops:
             if (node_set := tuple(sorted([n.name for n in lp.all_nodes]))) not in loop_set:
                 loop_set.add(node_set)
-            else:
                 new_all_loops.append(lp)
                 new_all_loop_name.add(lp.name)
+                
 
         self.__loops = new_all_loops
         for lp in self.__loops:
