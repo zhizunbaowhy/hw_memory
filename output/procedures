@@ -32,30 +32,30 @@ digraph "Procedure Graph" {
 	StoreData
 	_fini
 	_init -> call_weak_fn
-	_start -> "abort@plt"
 	_start -> "__libc_start_main@plt"
+	_start -> "abort@plt"
 	__wrap_main -> main
 	call_weak_fn -> "__gmon_start__@plt"
 	__do_global_dtors_aux -> deregister_tm_clones
 	frame_dummy -> register_tm_clones
-	main -> InitializeMesh_1
 	main -> Mesh_dot
+	main -> InitializeMesh_1
 	main -> ComplexDataHandle
-	main -> InitializeMesh_2
 	main -> StoreData
 	main -> SwapMesh
+	main -> InitializeMesh_2
 	main -> CompareMesh
 	main -> LoadData
 	InitializeMesh_1 -> "random@plt"
 	InitializeMesh_2 -> "random@plt"
-	LoadData -> "fgets@plt"
 	LoadData -> "fopen@plt"
 	LoadData -> "fclose@plt"
+	LoadData -> "fgets@plt"
 	LoadData -> "printf@plt"
 	ComplexDataHandle -> ManiplateData2
 	ComplexDataHandle -> ManiplateData1
-	StoreData -> "fclose@plt"
 	StoreData -> "fopen@plt"
+	StoreData -> "fclose@plt"
 	StoreData -> "fprintf@plt"
 	StoreData -> "fwrite@plt"
 }

@@ -1,19 +1,10 @@
 """
     目前在mem_tr一起实现了, debug之后 无误程序在移植到此 封装为类,对象
 """
-from newCFG.cfg import TCfg
-from newCFG.cfg import TCfg
-from newCFG.loadstore import LSProc
-from newCFG.rw_condition import RWProc
-from newCFG.cfg import proc_identify
-from newCFG.isa import Instruction, AddrMode
-from typing import Tuple
-from newCFG.read_asm import AsmFileReader, StatementType
-from graphviz import Digraph
-from newCFG.cfg import draw_proc, find_cycle, has_cycle, proc_draw_edges
-from cache_analysis.read_segment import segmentReader
-from cache_analysis.new_cache.fixponit import *
 import sys
+
+from cache_analysis.new_cache.fixponit import *
+from cache_analysis.read_segment import segmentReader
 
 
 class CacheRisk:
@@ -189,7 +180,7 @@ class CacheRisk:
 
             for n in loop.all_nodes:
                 loop_list[key].append(n.name)
-        print(loop_list)
+        # print(loop_list)
 
         loop_bound_list = {}
         for loop in self.tcfg.loops:
@@ -197,14 +188,14 @@ class CacheRisk:
             # print(key, loop.bound)
 
             loop_bound_list[loop.name] = loop.bound
-        print(loop_bound_list)
+        # print(loop_bound_list)
 
 
         # 根据loop获取该loop的memory access
         loop_memory_access = {key: [v for k, v in result.items() if k in values] for key, values in loop_list.items()}
         loop_memory_access = {key: tuple(item for sublist in value for item in sublist) for key, value in loop_memory_access.items()}
         # 这里验证以lbm.asm为例, 只有n0和n14访存了更大的page, 但是三个loop中没有包含这两个node的情况, 所以生成的是对的
-        print(loop_memory_access)
+        # print(loop_memory_access)
 
 
         # 根据所得到的loop_memory_access来具体划分每个loop的memory pages
@@ -230,15 +221,15 @@ class CacheRisk:
                     else:
                         page_list.append((page_start, page_end))
                         break
-            print(page_list)
+            # print(page_list)
             page_loop_access[level] = tuple(page_list)  # 添加当前层级的页面列表到结果字典中
 
-        print(page_loop_access)
+        # print(page_loop_access)
 
 
         # cache analysis ------------------------------------------------------------------------------------------------------------------------------------------
 
-        print(sys.version_info)
+        # print(sys.version_info)
 
         # f = r"D:\workspace\Gitdocuments\hw-memory\cache_analysis\new_cache\input\example-0.in"
         # f = r"D:\workspace\Gitdocuments\hw-memory\cache_analysis\new_cache\input\cache_information.in"
@@ -259,7 +250,7 @@ class CacheRisk:
         #           "outgoing", [n.ident for n in node.outgoing])
 
         is_fixpoint = fixpoint(config, graph, 'must', **user_kwargs)  # Switch to `may` or `persistent`.
-        print(is_fixpoint, graph.it_number)
+        # print(is_fixpoint, graph.it_number)
 
         #
         # # TRUE FLASE 统计 按照loop ---> page 粒度
@@ -312,8 +303,15 @@ class CacheRisk:
                 # END.append(loop_name + [int(tup[0]/4096)] +["must_hit: ", len(mb_must_hit), "persistent: ", len(mb_persistent), "must_miss: ", len(mb_must_miss), "uc: ", len(mb_uc)])
                 # loop_bound默认是1的计算结果
                 # TODO if loop_list[key] == loop_bound[key], loop_bound = loop_bound[key].value  if loop_name[0] == loop_bound[]
-                loop_bound = loop_bound_list.get(loop_name[0])
-                END.append([loop_name[0], int(tup[0]/4096), float( (float(len(mb_must_hit)*loop_bound) + float(len(mb_persistent)*(loop_bound-1)) + float(0.5*len(mb_uc)*loop_bound)) / (float(len(mb_persistent)*1) + float(len(mb_must_miss)*loop_bound) + float(0.5*len(mb_uc)*loop_bound)) ) ])
+                try:
+                    loop_bound = loop_bound_list.get(loop_name[0])
+                    END.append([loop_name[0],
+                                int(tup[0]/4096),
+                                (len(mb_must_hit)*loop_bound + len(mb_persistent)*(loop_bound-1) + 0.5*len(mb_uc)*loop_bound) /
+                                (len(mb_persistent) + len(mb_must_miss)*loop_bound + 0.5*len(mb_uc)*loop_bound)
+                                ])
+                except ZeroDivisionError as e:
+                    END.append([loop_name[0], int(tup[0] / 4096), -1])
                 mb_must_hit = list()
                 mb_persistent = list()
                 mb_must_miss = list()

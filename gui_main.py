@@ -170,7 +170,7 @@ class ResultTableWindow(SubWindow):
     def __set_table_data(self):
         self.table_widget.clear()
         self.table_widget.setColumnCount(5)
-        headers = ['', 'Column 1', 'Column 2', 'Column 3', 'Column 4']
+        headers = ['', 'Page Number', 'LS Result', 'Heat Result', 'Cache Result']
         self.table_widget.setHorizontalHeaderLabels(headers)
         if (t := self.combo_box.currentText()) in ('None', ''):
             self.table_widget.setRowCount(0)
@@ -503,29 +503,38 @@ def processing(c_f, asm_f, progress_cb, c_cb: Callable, asm_cb: Callable, cfg_cb
     tcfg.build_loop_hrchy()
     tcfg.add_loop_bound(r'D:\workspace\hw-memory\benchmarks\loop_bound.txt')
 
-    # Shangshang Xiao
-    try:
-        seg_fp = r'./benchmarks/final_benchmark/spec_benchmarkD.asm'
-        segreader = segmentReader(seg_fp)
-        lds_obj = loadstore_Obj(segreader, tcfg)  # TODO.
-        lsproc = lds_obj.lsproc
-    except Exception as e:
-        raise RuntimeError("Shangshang Xiao")
+    seg_fp = r'./benchmarks/final_benchmark/spec_benchmarkD.asm'
+    segreader = segmentReader(seg_fp)
+    lds_obj = loadstore_Obj(segreader, tcfg)
+    lsproc = lds_obj.lsproc
+    ls_loop_info = lds_obj.loop_info
 
-    # Jinyuan Liu
-    try:
-        test = loop_heat(tcfg, lsproc, r'./benchmarks/final_benchmark/spec_benchmarkD.asm')
-        test.do_it()
-    except Exception as e:
-        raise RuntimeError("Jinyuan Liu")
+    test = loop_heat(tcfg, lsproc, r'./benchmarks/final_benchmark/spec_benchmarkD.asm')
+    heat_dict = {k: v for k, v in test.do_it()}
 
-    try:
-        f1 = r"./benchmarks/final_benchmark/spec_benchmarkD.asm"
-        f2 = r"./cache_analysis/new_cache/input/cache_information.in"
-        cache_test = CacheRisk(tcfg, lsproc, f1, f2)
-        cache_test.test()
-    except Exception as e:
-        raise RuntimeError("Hongyue Wang")
+    f1 = r"./benchmarks/final_benchmark/spec_benchmarkD.asm"
+    f2 = r"./cache_analysis/new_cache/input/cache_information.in"
+    cache_test = CacheRisk(tcfg, lsproc, f1, f2)
+    cache_list = cache_test.test()
+    cache_dict = {k: list() for k in set([k for k, _, _ in cache_list])}
+    for k, p, r in cache_list:
+        cache_dict[k].append((p, r))
+    for k in cache_dict.keys():
+        cache_dict[k] = {_k: _v for _k, _v in cache_dict[k]}
+
+    loop_keys = list(ls_loop_info.keys())
+    rlt_dict = dict()
+    for lp_k in loop_keys:
+        pg_rlt_list = list()
+        lp_ls_dict, lp_heat_dict, lp_cache_dict = ls_loop_info[lp_k], heat_dict[lp_k], cache_dict[lp_k]
+        page_set = set(lp_ls_dict.keys()).union(set(lp_heat_dict.keys())).union(lp_cache_dict.keys())
+        for pg in page_set:
+            ls_val = str(lp_ls_dict.get(pg, None))
+            heat_val = str(lp_heat_dict.get(pg, None))
+            cache_val = str(lp_cache_dict.get(pg, None))
+            pg_rlt_list.append((str(pg), ls_val, heat_val, cache_val))
+        rlt_dict[lp_k] = pg_rlt_list
+    result_cb(loop_keys, rlt_dict)
 
     progress_cb(100)
 
