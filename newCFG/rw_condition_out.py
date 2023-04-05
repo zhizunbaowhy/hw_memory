@@ -100,7 +100,7 @@ class RWOut_Proc:
         self.loopinfo = {}
 
         for n in self.loopnodes:
-            self.loopinfo[n[0]] = []
+            self.loopinfo[n[0]] = {}
             self.loopinfo_tol_output[n[0]] = {}
             self.loopinfo_intol_output[n[0]] = {}
         
@@ -121,11 +121,41 @@ class RWOut_Proc:
                 self.loopinfo_intol_output[k][addrset//4096] += value
         
         
-        for k,v in self.loopinfo_tol_output.items():
-            print(k,v)
-        print()
-        for k,v in self.loopinfo_intol_output.items():
-            print(k,v)
+        #for k,v in self.loopinfo_tol_output.items():
+        #    print(k,v)
+        #print()
+        #for k,v in self.loopinfo_intol_output.items():
+        #    print(k,v)
+
+        
+        for k,v in self.loopinfo_tol.items():
+            for addrset in v:
+                self.loopinfo[k][addrset//4096] = 0
+
+        for k,v in self.loopinfo_intol.items():
+            for addrset in v:
+                self.loopinfo[k][addrset//4096] = 0
+
+        for i in self.loopnodes:
+            k = i[0]
+            tol = self.loopinfo_tol_output[k]
+            intol = self.loopinfo_intol_output[k]
+            
+            for addr in tol.keys():
+                if addr in intol.keys():
+                    self.loopinfo[k][addr] = tol[addr]/intol[addr]
+                else:
+                    self.loopinfo[k][addr] = 0
+            
+            for addr in intol.keys():
+                if addr in tol.keys():
+                    pass
+                else:
+                    self.loopinfo[k][addr] = -1
+
+
+        #for k,v in self.loopinfo.items():
+        #    print(k,v)
 
         
 
@@ -142,4 +172,6 @@ class RWOut_Proc:
                 while memory_addr <= i[3]:
                     self.node_access_addr[nodeName].append([memory_addr,findCycle,toletype])
                     memory_addr += self.ls_width
+
+    
 
