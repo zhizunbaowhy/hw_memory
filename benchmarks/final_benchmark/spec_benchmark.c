@@ -133,9 +133,9 @@ void InitializeMesh_1(void)
                 int temp = ms1[x][y];
                 temp = ms1[x][y];
                 temp = ms1[x][y];
-                ms1[x][y] = random();
-                ms1[x][y] = random();
-                ms1[x][y] = random();
+                ms1[x][y] = 1;
+                ms1[x][y] = 2;
+                ms1[x][y] = 3;
                 temp = ms1[x][y];
 
                 if(ms1[x][y]>100007)
@@ -158,9 +158,9 @@ void InitializeMesh_2(void)
                 temp = ms2[x][y];
                 temp = ms2[x][y];
                 temp = ms2[x][y];
-                ms2[x][y] = random();
-                ms2[x][y] = random();
-                ms2[x][y] = random();
+                ms2[x][y] = 1;
+                ms2[x][y] = 2;
+                ms2[x][y] = 3;
                 temp = ms2[x][y];
 
 
