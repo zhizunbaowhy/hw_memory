@@ -148,8 +148,8 @@ for i in lds_table:
     if i.is_sp is False:
         # node + address(string) + address(int) + load/store address(int) + data width(Byte=bit/8)
         mem_ls.append([i.node.name] + [i.ins.tokens[0]] + [i.ins.addr.val()] + [i.final_addr] + [int(i.ins.ls_data_width/8)] + [str(i.ins.is_data_group)])
-# print(mem_ls)
-# print(mem_ls[0][2])
+print(mem_ls)
+print(mem_ls[0][2])
 # 如果AddressMode是寄存器则赋值 -1
 for item in mem_ls:
     if item[5] == "True": # TODO 这里具体是不是AddrMode.Reg还需要再看
@@ -189,7 +189,8 @@ for n in range(len(mem_ls)):
 
 # 在这里提前获得.bss & .data segment信息
 # segment = segmentReader(r'C:\Users\51777\Desktop\华为memory\test\objdump\-D manytest.asm')
-segment = segmentReader(r'D:\workspace\Gitdocuments\hw-memory\benchmarks\final_benchmark\spec_benchD.asm')
+# segment = segmentReader(r'D:\workspace\Gitdocuments\hw-memory\benchmarks\final_benchmark\spec_benchD.asm')
+segment = segmentReader(r'D:\workspace\Gitdocuments\hw-memory\benchmarks\final_benchmark\spec_benchmarkD.asm')
 bss = segment.getbss()
 data = segment.getdata()
 # 将.bss 和 .data 合成一个 一般是 .data在前 .bss在后; 但是为了方便处理.data的最后一个数据长度,将其反过来
@@ -202,13 +203,14 @@ for i in range(len(data)):
 
 # 处理.data的最后一个数据长度, 就是.bss段开始标志的'completed.0'地址
 ALL[-1][3] = ALL[0][2]
-# print("ALL_Last:", ALL)
+print("ALL_Last:", ALL)
 
 # 直接把.bss/.data中全局变量长度 替换到mem_head里,更方便
 for i in ALL:
     for item in mem_head:
         # 这里item[3]如果是寄存器 比如这里用-1记录; 提前判断:如果是寄存器,则用tail-head得到的长度替换item[3]
-        if i[2] == item[2] and item[3] == -1:
+        # if i[2] == item[2] and item[3] == -1:
+        if i[2] <= item[2] and item[2] < i[3] and item[3] == -1:
             item[3] = i[3]-i[2]
 # print("mem_head222: ", mem_head)
 
@@ -363,123 +365,22 @@ print(sys.version_info)
 f = r"D:\workspace\Gitdocuments\hw-memory\cache_analysis\new_cache\input\cache_information.in"
 config, graph, user_kwargs = read_from_file(f)
 
-print("==== Cache Config ====")
-print("Set index length:", config.set_index_len)
-print("Cache offset:", config.offset_len)
-print("Cache association:", config.assoc)
-
-print("\n==== TCFG ====")
-for node in graph.all_nodes:
-    print(node.ident,
-          "access", [b.__str__() for b in node.access_blocks],
-          "incoming", [n.ident for n in node.incoming],
-          "outgoing", [n.ident for n in node.outgoing])
+# print("==== Cache Config ====")
+# print("Set index length:", config.set_index_len)
+# print("Cache offset:", config.offset_len)
+# print("Cache association:", config.assoc)
+#
+# print("\n==== TCFG ====")
+# for node in graph.all_nodes:
+#     print(node.ident,
+#           "access", [b.__str__() for b in node.access_blocks],
+#           "incoming", [n.ident for n in node.incoming],
+#           "outgoing", [n.ident for n in node.outgoing])
 
 is_fixpoint = fixpoint(config, graph, 'must', **user_kwargs)  # Switch to `may` or `persistent`.
 print(is_fixpoint, graph.it_number)
 
-# 全部输出
-# for node in graph.all_nodes:
-#     print(node.ident)
-#     for r, mb, hit in node.analysis_result():
-#         print(r, mb, hit)
 
-# 根据loop找所有页面的hit/miss情况
-# for loop in loop_list.values():
-#     # 找属于哪个loop
-#     name = [key for key, value in loop_list.items() if value == loop]
-#     print(name)
-#     for node in graph.all_nodes:
-#         if node.ident not in loop:
-#             continue
-#         print(node.ident)
-#         for r, mb, hit in node.analysis_result():
-#             print(r, mb, hit)
-
-# 根据loop找各个页的hit/miss情况
-# TODO 如果横跨了page 应该如何统计 ---> 生成page_range的时候就规定了页 4096 所以照旧分析即可
-# for loop in loop_list.values():
-#     # 找属于哪个loop
-#     loop_name = [key for key, value in loop_list.items() if value == loop]
-#     print(loop_name)
-#     for node in graph.all_nodes:
-#         if node.ident not in loop:
-#             continue
-#         print(node.ident)
-#         page_range = page_loop_access.get(loop_name[0]) # 得到具体这个loop的page
-#         # print(page_range)
-#
-#         for r, mb, hit in node.analysis_result():
-#             for tup in page_range:
-#                 if r[0] >= tup[0] and r[1] <= tup[1]:
-#                     print(int(tup[0]/4096))
-#                     print(r, mb, hit)
-#
-#
-# # Persistent分析
-# is_fixpoint = fixpoint(config, graph, 'persistent', **user_kwargs)  # Switch to `may` or `persistent`.
-# print(is_fixpoint, graph.it_number)
-#
-# for loop in loop_list.values():
-#     # 找属于哪个loop
-#     loop_name = [key for key, value in loop_list.items() if value == loop]
-#     print(loop_name)
-#     for node in graph.all_nodes:
-#         if node.ident not in loop:
-#             continue
-#         print(node.ident)
-#         page_range = page_loop_access.get(loop_name[0]) # 得到具体这个loop的page
-#         # print(page_range)
-#
-#         for r, mb, hit in node.analysis_result():
-#             for tup in page_range:
-#                 if r[0] >= tup[0] and r[1] <= tup[1]:
-#                     print(int(tup[0]/4096))
-#                     print(r, mb, hit)
-#
-#
-# # MAY 分析
-# is_fixpoint = fixpoint(config, graph, 'may', **user_kwargs)  # Switch to `may` or `persistent`.
-# print(is_fixpoint, graph.it_number)
-#
-# for loop in loop_list.values():
-#     # 找属于哪个loop
-#     loop_name = [key for key, value in loop_list.items() if value == loop]
-#     print(loop_name)
-#     for node in graph.all_nodes:
-#         if node.ident not in loop:
-#             continue
-#         print(node.ident)
-#         page_range = page_loop_access.get(loop_name[0]) # 得到具体这个loop的page
-#         # print(page_range)
-#
-#         for r, mb, hit in node.analysis_result():
-#             for tup in page_range:
-#                 if r[0] >= tup[0] and r[1] <= tup[1]:
-#                     print(int(tup[0]/4096))
-#                     print(r, mb, hit)
-#
-#
-# # TRUE FLASE 统计 按照loop ---> page 粒度
-# # TODO MUST找TRUE, 并delete 整个 e.g., (2052, 2056), (<MemBlk tag:0x0 idx:0x20>,), [TRUE] ---> Persistent找True
-# # TODO MUST --> if TRUE: (hit++)*loop_bound;  Persistent --> if TRUE: miss++, (hit++)*(loop_bound-1);  MAY --> if FALSE: (miss++)*loop_bound;  UC --> residue: 0.5*(miss++)*loop_bound, 0.5*(hit++)*loop_bound.
-#
-# for loop in loop_list.values():
-#     # 找属于哪个loop
-#     loop_name = [key for key, value in loop_list.items() if value == loop]
-#     print(loop_name)
-#     for node in graph.all_nodes:
-#         if node.ident not in loop:
-#             continue
-#         print(node.ident)
-#         page_range = page_loop_access.get(loop_name[0]) # 得到具体这个loop的page
-#         # print(page_range)
-#
-#         for r, mb, hit in node.analysis_result():
-#             for tup in page_range:
-#                 if tup[0] <= config.block2address(mb) <= tup[1]:
-#                     print(int(tup[0]/4096))
-#                     print(r, mb, hit)
 
 # 最终结果--------------------------------------------------------------------------------------------------------------------------------------------
 graph_must, graph_may, graph_pers = deepcopy(graph), deepcopy(graph), deepcopy(graph)
@@ -518,18 +419,20 @@ for loop in loop_list.values():
                                 else:
                                     mb_uc.append(mb)
 
-        print(loop_name, "--->", tup, "mb_must_hit: ", mb_must_hit, len(mb_must_hit))
-        print(loop_name, "--->", tup, "mb_persistent: ", mb_persistent, len(mb_persistent))
-        print(loop_name, "--->", tup, "mb_must_miss: ", mb_must_miss, len(mb_must_miss))
-        print(loop_name, "--->", tup, "mb_uc: ", mb_uc, len(mb_uc))
-        # print(loop_name, "ratio--->")
-        # END.append(loop_name + [int(tup[0]/4096)] +["must_hit: ", len(mb_must_hit), "persistent: ", len(mb_persistent), "must_miss: ", len(mb_must_miss), "uc: ", len(mb_uc)])
-        # loop_bound默认是1的计算结果
-        END.append([tuple(loop_name), int(tup[0]/4096), float( (float(len(mb_must_hit)*loop_bound) + float(len(mb_persistent)*(loop_bound-1)) + float(0.5*len(mb_uc)*loop_bound)) / (float(len(mb_persistent)*1) + float(len(mb_must_miss)*loop_bound) + float(0.5*len(mb_uc)*loop_bound)) ) ])
-        mb_must_hit = list()
-        mb_persistent = list()
-        mb_must_miss = list()
-        mb_uc = list()
-
+        # print(loop_name, "--->", tup, "mb_must_hit: ", mb_must_hit, len(mb_must_hit))
+        # print(loop_name, "--->", tup, "mb_persistent: ", mb_persistent, len(mb_persistent))
+        # print(loop_name, "--->", tup, "mb_must_miss: ", mb_must_miss, len(mb_must_miss))
+        # print(loop_name, "--->", tup, "mb_uc: ", mb_uc, len(mb_uc))
+        # # print(loop_name, "ratio--->")
+        # # END.append(loop_name + [int(tup[0]/4096)] +["must_hit: ", len(mb_must_hit), "persistent: ", len(mb_persistent), "must_miss: ", len(mb_must_miss), "uc: ", len(mb_uc)])
+        # # loop_bound默认是1的计算结果
+        try:
+            END.append([tuple(loop_name), int(tup[0]/4096), float( (float(len(mb_must_hit)*loop_bound) + float(len(mb_persistent)*(loop_bound-1)) + float(0.5*len(mb_uc)*loop_bound)) / (float(len(mb_persistent)*1) + float(len(mb_must_miss)*loop_bound) + float(0.5*len(mb_uc)*loop_bound)) ) ])
+            mb_must_hit = list()
+            mb_persistent = list()
+            mb_must_miss = list()
+            mb_uc = list()
+        except ZeroDivisionError as e:
+            END.append([loop_name[0], int(tup[0] / 4096), -1])
 print(END)
 #%%
