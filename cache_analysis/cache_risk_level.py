@@ -32,13 +32,13 @@ class CacheRisk:
             if i.is_sp is False:
                 # node + address(string) + address(int) + load/store address(int) + data width(Byte=bit/8)
                 mem_ls.append([i.node.name] + [i.ins.tokens[0]] + [i.ins.addr.val()] + [i.final_addr] + [int(i.ins.ls_data_width/8)] + [str(i.ins.is_data_group)])
-        # print(mem_ls)
+        # print("mem_ls1: ", mem_ls)
         # print(mem_ls[0][2])
         # 如果AddressMode是寄存器则赋值 -1
         for item in mem_ls:
             if item[5] == "True":
                 item[4] = -1
-        # print(mem_ls)
+        # print("mem_ls2: ", mem_ls)
 
         mem_node = []
         mem_head = []
@@ -56,7 +56,7 @@ class CacheRisk:
                 mem_head.append([i.name] + [m.addr.val()] + [m.addr.val()] + [4])
 
         # print(mem_ls)
-        # print(mem_head)
+        # print("mem_head: ", mem_head)
         # 判断load and store指令 如果是load/store将后面的值改为访存地址值(int)
         for n in range(len(mem_ls)):
             for i in range(len(mem_head)):
@@ -67,7 +67,7 @@ class CacheRisk:
                     # 将长度替换为load/store传过来的长度
                     mem_head[i][3] = mem_ls[n][4]
 
-        # print("mem_head: ", mem_head)
+        # print("mem_head_222: ", mem_head)
         # cache分析所需要的memory node信息
         # print(mem_node)
 
@@ -92,10 +92,10 @@ class CacheRisk:
         for i in ALL:
             for item in mem_head:
                 # 这里item[3]如果是寄存器 比如这里用-1记录; 提前判断:如果是寄存器,则用tail-head得到的长度替换item[3]
-                if i[2] <= item[2] <= i[3] and item[3] == -1: # 如果访存地址是在这个数组之间 且是加入数组(sp作为中间变量 偏移)
+                if i[2] <= item[2] and item[2] < i[3] and item[3] == -1: # 如果访存地址是在这个数组之间 且是加入数组(sp作为中间变量 偏移)
                     item[2] = i[2] # 如果
                     item[3] = i[3]-i[2]
-        # print("mem_head222: ", mem_head)
+        # print("mem_head_Last: ", mem_head)
 
         # 对于同一node 如果前后地址一致，则append tuple(start,end); 前后地址不一致说明是l/s指令，则append tuple(start,start), tuple(end,end)
         # 这里的tuple(end,end) 应该是tuple(end,end+len) len单独一个list传进来，根据指令长度决定，如果是寄存器则通过寻找segement确定 先默认长度为4
@@ -136,11 +136,11 @@ class CacheRisk:
 
         # print test information of cache analysis
         # cache分析所需要的边信息 node--->node 有向边
-        print(mem_edge)
-        # cache分析所需要的memory node信息
-        print(mem_node)
-        # cache分析所需要memory trace信息
-        print(result)
+        # print(mem_edge)
+        # # cache分析所需要的memory node信息
+        # print(mem_node)
+        # # cache分析所需要memory trace信息
+        # print(result)
 
         '''
             将memory trace按照in格式打印到文件里 方便分析
@@ -203,23 +203,29 @@ class CacheRisk:
 
         page_loop_access = {}  # 用于保存页面序列的字典
 
+        # TODO
         # 遍历所有层级的地址序列
         for level, address_list in loop_memory_access.items():
             visited_pages = set()  # 用来保存已经访问过的内存页面
             page_list = []  # 用于保存属于当前地址序列的内存页面
-
+            # print("=========================", level, address_list)
             # 遍历地址序列中的每一个地址并转换为页面编号
             for addr_start, addr_end in address_list:
                 page_start, page_end = (addr_start // page_size) * page_size, ((addr_end - 1) // page_size + 1) * page_size  # 地址所在的内存页面范围
-                if page_start in visited_pages:  # 如果该页面已经在当前地址序列的处理过程中，直接跳过
+                # if page_start in visited_pages:  # 如果该页面已经在当前地址序列的处理过程中，直接跳过
+                # if (page_start, page_end) in visited_pages:
+                if page_start in visited_pages:
                     continue
                 visited_pages.add(page_start)  # 将该页面标记为已处理
+                # visited_pages.add((page_start, page_start + page_size))
                 while page_start < page_end:
                     if page_start + page_size < page_end:
                         page_list.append((page_start, page_start+page_size))
                         page_start = page_start + page_size
+                        # visited_pages.add((page_start, page_start + page_size))
                     else:
                         page_list.append((page_start, page_end))
+                        # visited_pages.add((page_start, page_start + page_size))
                         break
             # print(page_list)
             page_loop_access[level] = tuple(page_list)  # 添加当前层级的页面列表到结果字典中
