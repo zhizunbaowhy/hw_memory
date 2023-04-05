@@ -17,6 +17,7 @@ from newCFG.isa import Address, Instruction
 from newCFG.read_asm import StatementType
 import random
 
+
 class Procedure:
     def __init__(self, name: str, beg_addr: Address, instructions: list):
         self.__name = name
@@ -224,7 +225,7 @@ class TCfgNode:
         self.outgoing_edge: List[TCfgEdge] = list()
         self.incoming_edge: List[TCfgEdge] = list()
 
-        #读写分析和建立需要用到的数据
+        # 读写分析和建立需要用到的数据
         self.still_out_num = 0
         self.out_num = 0
         self.still_in_num = 0
@@ -233,17 +234,17 @@ class TCfgNode:
         self.is_end = False
         self.in_loop = False
 
-        #读写分析建立过程中需要的参数
+        # 读写分析建立过程中需要的参数
         self.no_out = False
         self.no_in = False
         self.node_value = 0
         self.loop_time = 1
 
-        #热度分析需要的草书
+        # 热度分析需要的草书
         self.loadlist = list()
         self.storelist = list()
-        self.heat_ld_result=dict()  
-        self.heat_st_result=dict()     #储存着所有的地址对应的次数
+        self.heat_ld_result = dict()
+        self.heat_st_result = dict()  # 储存着所有的地址对应的次数
 
     @property
     def name(self):
@@ -260,7 +261,7 @@ class TCfgNode:
     @property
     def instructions(self):
         return self.__instructions
-    
+
     def set_rw_data(self):
         for e in self.outgoing_edge:
             if e.is_backEdge:
@@ -274,22 +275,22 @@ class TCfgNode:
             else:
                 self.still_in_num += 1
                 self.in_num += 1
-        
+
         if self.in_num == 0:
             self.is_head = True
             self.no_in = True
             self.node_value = 1
-            if self.out_num == 0:#说明是单节点，没有前面也没有后面
+            if self.out_num == 0:  # 说明是单节点，没有前面也没有后面
                 for e in self.outgoing_edge:
                     if e.is_backEdge:
-                        #设置一下吧，万一漏了啥
+                        # 设置一下吧，万一漏了啥
                         pass
             else:
                 for e in self.outgoing_edge:
                     if e.is_backEdge:
                         pass
                     else:
-                        e.edge_value = self.node_value/self.out_num
+                        e.edge_value = self.node_value / self.out_num
 
         if self.out_num == 0:
             self.is_end = True
@@ -305,11 +306,11 @@ class TCfgNode:
                 else:
                     e.dst.get_rw_value(e.edge_value)
                     self.still_out_num -= 1
-            
+
             if self.still_out_num == 0:
                 self.no_out = True
 
-    def get_rw_value(self,value):
+    def get_rw_value(self, value):
         self.node_value += value
         self.still_in_num -= 1
 
@@ -322,7 +323,8 @@ class TCfgNode:
                     if e.is_backEdge:
                         pass
                     else:
-                        e.edge_value = self.node_value/self.out_num
+                        e.edge_value = self.node_value / self.out_num
+
 
 class TCfgEdgeType(Enum):
     Textual = auto()
@@ -339,7 +341,7 @@ class TCfgEdge:
         self.__dst = dst
         self.__kind = kind
 
-        #读写分析需要的数据
+        # 读写分析需要的数据
         self.is_backEdge = False
         self.edge_value = 0
         self.loop_value = 0
@@ -367,9 +369,9 @@ class TCfgLoop:
 
         self.bound = 0
 
-        self.loop_ld_heat=dict()
-        self.loop_st_heat=dict()
-        self.loop_heat=dict()  #这个就不分ld还是st了，因为最后热度就是相加
+        self.loop_ld_heat = dict()
+        self.loop_st_heat = dict()
+        self.page_heat_result = dict()  # 这个就不分ld还是st了，因为最后热度就是相加
 
     @property
     def name(self):
@@ -433,14 +435,12 @@ class TCfg:
                 loop_set.add(node_set)
                 new_all_loops.append(lp)
                 new_all_loop_name.add(lp.name)
-                
 
         self.__loops = new_all_loops
         for lp in self.__loops:
             if (lp.father is not None) and (lp.father.name not in new_all_loop_name):
                 lp.father = None
             lp.children = [_l for _l in lp.children if _l in new_all_loop_name]
-
 
     @property
     def nodes_mapping(self):

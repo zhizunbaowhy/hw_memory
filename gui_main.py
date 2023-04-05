@@ -17,9 +17,13 @@ from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtWidgets import QAction, QApplication, QComboBox, QDesktopWidget, QFileDialog, QHBoxLayout, QLabel, QLineEdit, QMainWindow, QMdiArea, QMdiSubWindow, \
     QMessageBox, QSizePolicy, QStyleFactory, QTableWidget, QTableWidgetItem, QTextEdit, QVBoxLayout, QWidget
 
+from cache_analysis.cache_risk_level import CacheRisk
+from cache_analysis.read_segment import segmentReader
 from newCFG.cfg import CallGraph, TCfg, find_cycle, has_cycle, proc_draw_edges, proc_identify
+from newCFG.heat_analysis import loop_heat
 from newCFG.isa import Instruction
 from newCFG.read_asm import AsmFileReader, StatementType
+from rwcond_out import loadstore_Obj
 
 
 class CCodeHighlighter(QSyntaxHighlighter):
@@ -496,9 +500,32 @@ def processing(c_f, asm_f, progress_cb, c_cb: Callable, asm_cb: Callable, cfg_cb
 
     progress_cb(80, "Doing analysis...")
 
-    result_cb(['demo1', 'demo2'], {'demo1': [['a1', 'a2', 'a3', 'a4'],
-                                             ['a5', 'a6', 'a7', 'a8']],
-                                   'demo2': [['b1', 'b2', 'b3', 'b4']]})
+    tcfg.build_loop_hrchy()
+    tcfg.add_loop_bound(r'D:\workspace\hw-memory\benchmarks\loop_bound.txt')
+
+    # Shangshang Xiao
+    try:
+        seg_fp = r'./benchmarks/final_benchmark/spec_benchmarkD.asm'
+        segreader = segmentReader(seg_fp)
+        lds_obj = loadstore_Obj(segreader, tcfg)  # TODO.
+        lsproc = lds_obj.lsproc
+    except Exception as e:
+        raise RuntimeError("Shangshang Xiao")
+
+    # Jinyuan Liu
+    try:
+        test = loop_heat(tcfg, lsproc, r'./benchmarks/final_benchmark/spec_benchmarkD.asm')
+        test.do_it()
+    except Exception as e:
+        raise RuntimeError("Jinyuan Liu")
+
+    try:
+        f1 = r"./benchmarks/final_benchmark/spec_benchmarkD.asm"
+        f2 = r"./cache_analysis/new_cache/input/cache_information.in"
+        cache_test = CacheRisk(tcfg, lsproc, f1, f2)
+        cache_test.test()
+    except Exception as e:
+        raise RuntimeError("Hongyue Wang")
 
     progress_cb(100)
 
