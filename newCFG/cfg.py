@@ -411,6 +411,22 @@ class TCfg:
 
     def build_loop_hrchy(self):
         self.__build_loop_hrchy()
+        loop_set = set()
+
+        new_all_loops, new_all_loop_name = list(), set()
+        for lp in self.__loops:
+            if (node_set := tuple(sorted([n.name for n in lp.all_nodes]))) not in loop_set:
+                loop_set.add(node_set)
+            else:
+                new_all_loops.append(lp)
+                new_all_loop_name.add(lp.name)
+
+        self.__loops = new_all_loops
+        for lp in self.__loops:
+            if (lp.father is not None) and (lp.father.name not in new_all_loop_name):
+                lp.father = None
+            lp.children = [_l for _l in lp.children if _l in new_all_loop_name]
+
 
     @property
     def nodes_mapping(self):
