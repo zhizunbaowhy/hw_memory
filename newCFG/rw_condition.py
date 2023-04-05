@@ -25,13 +25,13 @@ class RWUnit:
         self.__node = node
         self.__final_addr = self.__ins.final_addr
         self.__find_cycle = 0
-        self.__find_trace = list()
+        self.find_trace = list()
         self.__is_find = False
         self.__is_torrent = RWType.Unknown
 
     def add_find_cycle(self,ins,nodeValue):
         self.__find_cycle += nodeValue
-        self.__find_trace.append(ins)
+        self.find_trace.append(ins)
     
     @property
     def find_cycle(self):
@@ -78,6 +78,9 @@ class RWProc:
             rw_unit = RWUnit(lsunit.ins,lsunit.node)
             self.__rw_table.append(rw_unit)
 
+            if rw_unit.ins.addr.hex_str() == "400fb0":
+                tempUse = rw_unit
+
             find_queue= Queue(0)
             find_queue.put(rw_unit.node)
             temp_node = find_queue.get()
@@ -104,15 +107,28 @@ class RWProc:
                     loop_bound = 1
                     find_queue.put(e.src)
                     loop_start = list()
+
                     if e.is_backEdge:
                         is_loop = True
                         loop_start.append(e.src)
                         loop_bound = loop_bound*e.loop_value
-                    else:
-                        pass
+        
                     while not rw_unit.is_find:
                         
                         temp_node = find_queue.get()
+                        
+                        #for e in temp_node.incoming_edge:
+                        #    find_queue.put(e.src)
+                        #    print(e.src.name)
+                        
+                        #print(temp_node.name)
+                        #if rw_unit.ins.addr.hex_str() == "400fb0":
+                        #    print("is here")
+                            
+                        for e in temp_node.incoming_edge:
+                            if e.src in loop_start:
+                                continue
+                            find_queue.put(e.src)
 
                         for ins in reversed(temp_node.instructions):
                             rw_unit.add_find_cycle(ins,temp_node.node_value*loop_bound)
@@ -123,7 +139,7 @@ class RWProc:
 
                         for n in loop_start:
                             if temp_node.name == n.name:
-                                break
+                                continue
                         if find_queue.empty():
                             break
                         for e in temp_node.incoming_edge:
