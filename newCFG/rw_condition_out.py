@@ -23,31 +23,31 @@ class RWOut_Proc:
         
 
         for rwu in self.rw_table:
-            print(rwu.ins.tokens,rwu.find_cycle,rwu.ins.final_addr,rwu.is_torrent,rwu.node.name)
+            #print(rwu.ins.tokens,rwu.find_cycle,rwu.ins.final_addr,rwu.is_torrent,rwu.node.name)
             if rwu.is_torrent == RWType.Global_Tolerant:
-                print("here Global_Tolerant")
-                print()
+                #print("here Global_Tolerant")
+                #print()
                 if rwu.ins.is_data_group:
-                    print("here is_data_group")
+                    #print("here is_data_group")
                     self.find_range(rwu.ins.final_addr,rwu.node.name,rwu.find_cycle,RWType.Global_Tolerant)
-                    print(rwu.node.name,self.node_access_addr[rwu.node.name])
+                    #print(rwu.node.name,self.node_access_addr[rwu.node.name])
                 else: 
-                    print("else")      
+                    #print("else")      
                     self.node_access_addr[rwu.node.name].append([rwu.ins.final_addr,rwu.find_cycle,RWType.Global_Tolerant])
-                    print(rwu.node.name,self.node_access_addr[rwu.node.name])
+                    #print(rwu.node.name,self.node_access_addr[rwu.node.name])
             if rwu.is_torrent == RWType.Global_Intolerant:
-                print("here Global_Intolerant")
+                #print("here Global_Intolerant")
                 if rwu.ins.is_data_group:
-                    print("here is_data_group")
+                    #print("here is_data_group")
                     self.find_range(rwu.ins.final_addr,rwu.node.name,rwu.find_cycle,RWType.Global_Intolerant)
-                    print(rwu.node.name,self.node_access_addr[rwu.node.name])
+                    #print(rwu.node.name,self.node_access_addr[rwu.node.name])
                 else:
-                    print("else")    
+                    #print("else")    
                     self.node_access_addr[rwu.node.name].append([rwu.ins.final_addr,rwu.find_cycle,RWType.Global_Intolerant])
-                    print(rwu.node.name,self.node_access_addr[rwu.node.name])
+                    #print(rwu.node.name,self.node_access_addr[rwu.node.name])
 
-        for k,v in self.node_access_addr.items():
-            print(k,v)
+        #for k,v in self.node_access_addr.items():
+            #print(k,v)
 
         self.loopnodes = list()
         
@@ -100,11 +100,11 @@ class RWOut_Proc:
                                 self.loopinfo_intol[loopname][memmoryaddr] += memmoryvalue
 
 
-        for k,v in self.loopinfo_intol.items():
-            print(k,v)
+        #for k,v in self.loopinfo_intol.items():
+        #    print(k,v)
 
-        for k,v in self.loopinfo_tol.items():
-            print(k,v)
+        #for k,v in self.loopinfo_tol.items():
+        #    print(k,v)
         
 
         self.loopinfo_tol_output = {}
@@ -157,13 +157,13 @@ class RWOut_Proc:
                 if addr in intol.keys():
                     self.loopinfo[k][addr] = tol[addr]/intol[addr]
                 else:
-                    self.loopinfo[k][addr] = 0
+                    self.loopinfo[k][addr] = "完全容错"
             
             for addr in intol.keys():
                 if addr in tol.keys():
                     pass
                 else:
-                    self.loopinfo[k][addr] = -1
+                    self.loopinfo[k][addr] ="非容错"
 
 
         #for k,v in self.loopinfo.items():
