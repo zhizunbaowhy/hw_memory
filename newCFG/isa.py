@@ -551,14 +551,14 @@ class Instruction:
             if self.__add_1op == self.__add_2op:
                 self.__add_same = True
 
-                re_imm = re.match(self.__ls_immOffset_cpat,self.__add_3op)
-                if re_imm:
-                    self.__add_imm = True
-                    temp = re_imm.groups()[0]
-                    if temp[0:2] == "0x":
-                        self.__add_3op = int(temp,16)
-                    else:
-                        self.__add_3op = int(temp)
+            re_imm = re.match(self.__ls_immOffset_cpat,self.__add_3op)
+            if re_imm:
+                self.__add_imm = True
+                temp = re_imm.groups()[0]
+                if temp[0:2] == "0x":
+                    self.__add_3op = int(temp,16)
+                else:
+                    self.__add_3op = int(temp)
     
     @property
     def is_add(self):

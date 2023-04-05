@@ -93,22 +93,22 @@ class LSUnit:
                 tar_1 = self.reg_target_list[0]
                 tar_2 = self.reg_target_list[1][1]
                 
-                if self.__is_sp:
+                #if self.__is_sp:
                     
-                    is_hex_addr = re.match(self.re_hex_addr,tar_1)
-                    
-                    if is_hex_addr:
-                        self.__final_addr = int(tar_1,16)
-                        self.__final_addr += self.__addr_offset
-                        self.__ins.is_data_group = True
-                        self.__is_sp = False
+                is_hex_addr = re.match(self.re_hex_addr,tar_1)
+                
+                if is_hex_addr:
+                    self.__final_addr = int(tar_1,16)
+                    self.__final_addr += self.__addr_offset
+                    self.__ins.is_data_group = True
+                    self.__is_sp = False
 
-                    is_hex_addr = re.match(self.re_hex_addr,tar_2)
-                    if is_hex_addr:
-                        self.__final_addr = int(tar_2,16)
-                        self.__final_addr += self.__addr_offset
-                        self.__ins.is_data_group = True
-                        self.__is_sp = False
+                is_hex_addr = re.match(self.re_hex_addr,tar_2)
+                if is_hex_addr:
+                    self.__final_addr = int(tar_2,16)
+                    self.__final_addr += self.__addr_offset
+                    self.__ins.is_data_group = True
+                    self.__is_sp = False
             
             self.__ins.set_final_addr(self.__final_addr)
             return self.__final_addr

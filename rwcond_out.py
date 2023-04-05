@@ -37,12 +37,11 @@ class loadstore_Obj:
             i.final_addr
             i.local_offset
 
-        #for i in lds_table:
-        #    if i.target_num == 1:
-        #       pass
-                #print(i.ins.tokens,i.reg_target,i.addr_offset) 
-        #   else:
-                #print(i.ins.tokens,i.reg_target_list[0],i.reg_target_list[1],i.addr_offset,i.final_addr)
+        for i in lds_table:
+            if i.target_num == 1:
+               print(i.ins.tokens,i.reg_target,i.final_addr,i.addr_offset,i.is_find) 
+            else:
+                print(i.ins.tokens,i.reg_target_list[0],i.reg_target_list[1],i.addr_offset,i.final_addr,i.is_find)
 
         self.rwproc = RWProc(lds_table)
 
@@ -50,14 +49,14 @@ class loadstore_Obj:
         Global_Intolerant_value = 0
 
         for rwu in self.rwproc.rw_table:
-            #print(rwu.ins.tokens,rwu.find_cycle,rwu.ins.final_addr,rwu.is_torrent)
+            print(rwu.ins.tokens,rwu.find_cycle,rwu.ins.final_addr,rwu.is_torrent)
             if rwu.is_torrent == RWType.Global_Tolerant:
                 Global_Tolerant_value += rwu.find_cycle
                 
                 #print(rwu.ins.tokens,rwu.ins.final_addr,rwu.node.name)
         #print()
         for rwu in self.rwproc.rw_table:
-            #print(rwu.ins.tokens,rwu.find_cycle,rwu.ins.final_addr,rwu.is_torrent)
+            print(rwu.ins.tokens,rwu.find_cycle,rwu.ins.final_addr,rwu.is_torrent)
             if rwu.is_torrent == RWType.Global_Intolerant:
                 Global_Intolerant_value += rwu.find_cycle
                 #print(rwu.ins.tokens,rwu.ins.final_addr,rwu.node.name)
