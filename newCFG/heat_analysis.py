@@ -15,7 +15,7 @@ class loop_heat:
         self.lobounds=dict()
     def find_range(self,addr:int):
         for a in self.D:
-            if a[2]<= addr <=a[3]:
+            if addr >= a[2] and addr < a[3]:
                 return a[2],a[3]
 
             
@@ -37,7 +37,7 @@ class loop_heat:
             #     pass
             elif i.ins.name[0:1] == "s" and i.is_sp==False:
                 i.node.storelist.append((i.ins,i.final_addr))
-
+            #print(i.node.name,i.node.loadlist,i.node.storelist)
 
         for node in self.tcfg.all_nodes:
             for i in node.loadlist:
@@ -113,9 +113,12 @@ class loop_heat:
         else:
             aaa=pagestart//self.page_size
             bbb=((pageend-1)//self.page_size)+1
-            for i in range(aaa,bbb+1):
+            for i in range(aaa,bbb):
                 temp.append([i,figure])
         return temp
     def do_it(self):
+        print(self.D)
+        # for i in self.lds_table:
+        #     print(i.node.name,"指令",i.ins.tokens,"是否是SP",i.is_sp,"指令地址",i.ins.addr.val(),"访存地址",i.final_addr,"数据宽度",i.ins.ls_data_width,"是否是加入一个数组",i.ins.is_data_group)
         self.loop_heat_analysis()
         return self.heat_result
