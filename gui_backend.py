@@ -11,6 +11,7 @@ from typing import Tuple
 from PyQt5.QtCore import QThread, pyqtSignal
 
 from cache_analysis.cache_risk_level import CacheRisk
+from cache_analysis.new_cache.fixponit import FixpointGraph
 from cache_analysis.read_segment import segmentReader
 from newCFG.cfg import CallGraph, TCfg, find_cycle, has_cycle, proc_draw_edges, proc_identify
 from newCFG.heat_analysis import loop_heat
@@ -29,6 +30,7 @@ class WorkerThread(QThread):
     result_asm_file = pyqtSignal(str)
     result_cfg_file = pyqtSignal(str)
     result_analysis = pyqtSignal(list, dict)
+    result_memory_block = pyqtSignal(dict)
 
     def __init__(self, c_file, asm_file, asm_d_file, bound_file, fixpoint_file):
         super().__init__()
@@ -43,6 +45,7 @@ class WorkerThread(QThread):
         self.ls_loop_info = None
         self.heat_dict = None
         self.cache_dict = None
+        self.graph = None
 
     def check_validation(self):
         if not os.path.isfile(self.asm_file):
@@ -109,6 +112,17 @@ class WorkerThread(QThread):
             self.cache_dict[k].append((p, r))
         for k in self.cache_dict.keys():
             self.cache_dict[k] = {_k: _v for _k, _v in self.cache_dict[k]}
+        self.graph: FixpointGraph = cache_test.graph
+
+    def memory_block_analysis(self):
+        self.graph: FixpointGraph
+        rlt = dict()
+        for node in self.graph.all_nodes:
+            rlt[node.ident] = [(r, mbs) for r, mbs, _ in node.analysis_result()]
+        rlt = {k: "\n".join([f"({hex(r[0])}, {hex(r[1])})" +
+                             "".join(("\n" if idx % 3 == 0 else " ") + str(mb) for idx, mb in enumerate(mbs)) for r, mbs in v])
+               for k, v in rlt.items()}
+        self.result_memory_block.emit(rlt)
 
     def final_analysis(self):
         loop_keys = list(self.ls_loop_info.keys())
@@ -139,7 +153,9 @@ class WorkerThread(QThread):
             self.hotness_analysis()
             self.progress_updated.emit(50, "Do cache analysis...")
             self.cache_analysis()
-            self.progress_updated.emit(80, "Almost done...")
+            self.progress_updated.emit(80, "Do memory block analysis...")
+            self.memory_block_analysis()
+            self.progress_updated.emit(90, "Almost done...")
             self.final_analysis()
             self.progress_updated.emit(100, "Finished.")
         except Exception as e:

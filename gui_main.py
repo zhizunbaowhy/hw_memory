@@ -5,6 +5,7 @@
 @FileName   : gui_main.py
 @Description: 
 """
+import os
 import sys
 import traceback
 from typing import Any, Callable, List, Optional, Tuple, Union
@@ -26,22 +27,22 @@ class CCodeHighlighter(QSyntaxHighlighter):
         keyword_format.setForeground(QColor("#7f0055"))
         keyword_format.setFontWeight(QFont.Bold)
 
-        keywords = ["#", "include", "define", "auto", "break", "case", "char", "const", "continue", "default", "do", "double", "else", "enum", "extern",
+        keywords = ["\\#", "include", "define", "auto", "break", "case", "char", "const", "continue", "default", "do", "double", "else", "enum", "extern",
                     "float", "for", "goto", "if", "int", "long", "register", "return", "short", "signed", "sizeof", "static", "struct",
                     "switch", "typedef", "union", "unsigned", "void", "volatile", "while"]
         keyword_pattern = "\\b(" + "|".join(keywords) + ")\\b"
 
         comment_format = QTextCharFormat()
-        comment_format.setForeground(QColor("#888a85"))
+        comment_format.setForeground(QColor("#2e8b57"))
         string_format = QTextCharFormat()
         string_format.setForeground((QColor("#2e8b57")))
 
         rules = [
-            (QRegExp(keyword_pattern), keyword_format),
             (QRegExp(r"//[^\n]*"), comment_format),  # single-line comment
             (QRegExp(r"/\\*[^*]*\\*+(?:[^/*][^*]*\\*+)*/"), comment_format),  # multi-line comment
             (QRegExp("\".*\""), string_format),  # double-quoted string
             (QRegExp("'.{1}'"), string_format),  # single-quoted character
+            (QRegExp(keyword_pattern), keyword_format),
         ]
 
         return rules
@@ -67,12 +68,27 @@ class CCodeHighlighter(QSyntaxHighlighter):
 
         return rules
 
+    @staticmethod
+    def __mb_style():
+
+        keyword_format = QTextCharFormat()
+        keyword_format.setForeground(QColor("#8800A0"))
+        keyword_format.setFontWeight(QFont.Bold)
+
+        rules = [
+            (QRegExp(r"\(\s*[x0-9a-f]+\s*,\s*[x0-9a-f]+\s*\)"), keyword_format),
+        ]
+
+        return rules
+
     def __init__(self, parent=None, style='C'):
         super().__init__(parent)
         if style.lower() in {'c', 'c++', 'cpp'}:
             self.rules = self.__c_style()
         elif style.lower() == 'asm':
             self.rules = self.__arm_asm_style()
+        elif style.lower() == 'mb':
+            self.rules = self.__mb_style()
         else:
             self.rules = []
 
@@ -111,6 +127,45 @@ class OptWebView(QWebEngineView):
 
     def clear(self):
         self.setUrl(QtCore.QUrl("about:blank"))
+
+
+class MemoryBlockWindow(SubWindow):
+    def __init__(self, parent, **kwargs):
+        super().__init__(parent, **kwargs)
+
+        self.__data_mapping = dict()
+
+        self.combo_box = QComboBox()
+        font = QFontDatabase.systemFont(QFontDatabase.GeneralFont)
+        font.setFamily("Times Now Roman")
+        font.setBold(True)
+        font.setPixelSize(17)
+        self.combo_box.setFont(font)
+
+        self.text_edit = QTextEdit()
+        self.text_edit.setFont(QFont("Consolas", 10))
+        self.text_edit.setReadOnly(True)
+        self.highlighter = CCodeHighlighter(self.text_edit, style='mb')
+
+        self.combo_box.currentTextChanged.connect(self.__set_text)
+        self.combo_box.addItem("None")
+
+        layout = QVBoxLayout()
+        layout.addWidget(self.combo_box)
+        layout.addWidget(self.text_edit)
+        widget = QWidget()
+        widget.setLayout(layout)
+        self.setWidget(widget)
+
+    def set_data(self, data_mapping: dict):
+        self.__data_mapping = data_mapping
+        keys = tuple(data_mapping.keys())
+        self.combo_box.clear()
+        self.combo_box.addItems(keys)
+
+    def __set_text(self):
+        txt = self.__data_mapping.get(self.combo_box.currentText(), "")
+        self.text_edit.setText(txt)
 
 
 class ResultTableWindow(SubWindow):
@@ -355,6 +410,7 @@ class SecondaryWindow(QWidget):
         self.asm_callback: Callable = lambda: None
         self.cfg_callback: Callable = lambda: None
         self.result_callback: Callable = lambda: None
+        self.block_callback: Callable = lambda: None
 
         # Set up the UI
         self.setWindowTitle("Choose File")
@@ -417,36 +473,60 @@ class SecondaryWindow(QWidget):
         layout.addLayout(layout_btn)
         self.setLayout(layout)
 
+    @staticmethod
+    def change_file_extension(file_path, new_extension):
+        directory, filename = os.path.split(file_path)
+        basename, extension = os.path.splitext(filename)
+        new_file_path = os.path.join(directory, basename + '.' + new_extension)
+        return new_file_path
+
     def choose_asm_file(self):
         fp, ok = UserInput.get_open_file(self, title="Choose ASM file", file_filter=UserInput.file_filter_gen([("ASM File", ['asm'])]))
         if ok:
             self.asm_file_edit.setText(fp)
 
+            if os.path.isfile((f := self.change_file_extension(fp, 'dasm'))):
+                self.asm_D_edit.setText(f)
+            if os.path.isfile((f := self.change_file_extension(fp, 'c'))):
+                self.c_file_edit.setText(f)
+            if os.path.isfile((f := self.change_file_extension(fp, 'lb'))):
+                self.bound_file_edit.setText(f)
+            if os.path.isfile((f := self.change_file_extension(fp, 'fp'))):
+                self.fixpoint_file_edit.setText(f)
+
     def choose_asm_d_file(self):
-        fp, ok = UserInput.get_open_file(self, title="Choose ASM-D file", file_filter=UserInput.file_filter_gen([("ASM File", ['asm'])]))
+        fp, ok = UserInput.get_open_file(self, title="Choose ASM-D file", file_filter=UserInput.file_filter_gen([("D-ASM File", ['dasm'])]))
         if ok:
             self.asm_D_edit.setText(fp)
 
     def choose_c_file(self):
-        fp, ok = UserInput.get_open_file(self, title="Choose C file", file_filter=UserInput.file_filter_gen([("C Code", ['c', 'cpp', 'hpp', 'h'])]))
+        fp, ok = UserInput.get_open_file(self, title="Choose C file", file_filter=UserInput.file_filter_gen([("C Code", ['c'])]))
         if ok:
             self.c_file_edit.setText(fp)
 
     def choose_loop_bound(self):
-        fp, ok = UserInput.get_open_file(self, title="Specify loop bound file")
+        fp, ok = UserInput.get_open_file(self, title="Specify loop bound file", file_filter=UserInput.file_filter_gen([("Loop Bound", ['lb'])]))
         if ok:
             self.bound_file_edit.setText(fp)
 
     def choose_fixpoint_input(self):
-        fp, ok = UserInput.get_open_file(self, title="Choose Fixpoint input file")
+        fp, ok = UserInput.get_open_file(self, title="Choose Fixpoint input file", file_filter=UserInput.file_filter_gen([("Fixpoint Input", ['fp'])]))
         if ok:
             self.fixpoint_file_edit.setText(fp)
 
     def before_running(self):
         self.asm_file_edit.setEnabled(False)
         self.c_file_edit.setEnabled(False)
+        self.asm_D_edit.setEnabled(False)
+        self.bound_file_edit.setEnabled(False)
+        self.fixpoint_file_edit.setEnabled(False)
+
         self.asm_file_btn.setEnabled(False)
         self.c_file_btn.setEnabled(False)
+        self.asm_D_btn.setEnabled(False)
+        self.bound_file_btn.setEnabled(False)
+        self.fixpoint_file_btn.setEnabled(False)
+
         self.generate_btn.setEnabled(False)
         self.cancel_btn.setEnabled(False)
         self.progress_bar.setStyleSheet("QProgressBar::chunk {background-color: skyblue;}")
@@ -454,13 +534,22 @@ class SecondaryWindow(QWidget):
     def after_running(self):
         self.asm_file_edit.setEnabled(True)
         self.c_file_edit.setEnabled(True)
+        self.asm_D_edit.setEnabled(True)
+        self.bound_file_edit.setEnabled(True)
+        self.fixpoint_file_edit.setEnabled(True)
+
         self.asm_file_btn.setEnabled(True)
         self.c_file_btn.setEnabled(True)
+        self.asm_D_btn.setEnabled(True)
+        self.bound_file_btn.setEnabled(True)
+        self.fixpoint_file_btn.setEnabled(True)
+
         self.generate_btn.setEnabled(True)
         self.cancel_btn.setEnabled(True)
 
     def success_running(self):
         self.after_running()
+        Messenger.information(self, "Success", "Success.")
         self.close()
 
     def error_found(self, e):
@@ -488,6 +577,7 @@ class SecondaryWindow(QWidget):
             self.th.result_asm_file.connect(self.asm_callback)
             self.th.result_cfg_file.connect(self.cfg_callback)
             self.th.result_analysis.connect(self.result_callback)
+            self.th.result_memory_block.connect(self.block_callback)
 
             self.th.start()
 
@@ -521,6 +611,7 @@ class MainWindow(QMainWindow):
         self.asm_file_sub = ASMWindow(self, title='ASM file')
         self.cfg_sub = CFGWindow(self, title='Control flow graph')
         self.result_sub = ResultTableWindow(self, title='Result')
+        self.memory_block_sub = MemoryBlockWindow(self, title="Memory Block")
         # Create secondary window
         self.choose_file_sec = SecondaryWindow()
 
@@ -528,18 +619,21 @@ class MainWindow(QMainWindow):
         self.choose_file_sec.asm_callback = self.asm_file_sub.set_asm_code
         self.choose_file_sec.cfg_callback = self.cfg_sub.render_graph
         self.choose_file_sec.result_callback = self.result_sub.set_data
+        self.choose_file_sec.block_callback = self.memory_block_sub.set_data
 
         # Add sub-windows to MDI area
         self.mdi.addSubWindow(self.target_code_sub)
         self.mdi.addSubWindow(self.asm_file_sub)
         self.mdi.addSubWindow(self.cfg_sub)
         self.mdi.addSubWindow(self.result_sub)
+        self.mdi.addSubWindow(self.memory_block_sub)
 
         # Visible actions
         self.target_code_action = ActionWithMapping("Target Code", "target_code", parent=self, clickable=True)
         self.asm_file_action = ActionWithMapping("ASM file", "asm_file", parent=self, clickable=True)
         self.cfg_action = ActionWithMapping("Control flow graph", "cfg", parent=self, clickable=True)
         self.result_action = ActionWithMapping("Analysis Result", "result", parent=self, clickable=True)
+        self.block_action = ActionWithMapping("Memory Block", "block", parent=self, clickable=True)
 
         # Call secondary window to choose file for analysis.
         self.choose_file_action = ActionWithMapping("Choose File", 'choose_file', parent=self)
@@ -550,11 +644,12 @@ class MainWindow(QMainWindow):
         bar.addActions([self.choose_file_action])
         bar.triggered[ActionWithMapping].connect(lambda: self.choose_file_sec.show())
         self.menubar_visible = (bar := menubar.addMenu("Visible"))
-        bar.addActions([self.target_code_action, self.asm_file_action, self.cfg_action, self.result_action])
+        bar.addActions([self.target_code_action, self.asm_file_action, self.cfg_action, self.result_action, self.block_action])
         bar.triggered[ActionWithMapping].connect(lambda: self.target_code_sub.setVisible(self.target_code_action.isChecked()))
         bar.triggered[ActionWithMapping].connect(lambda: self.asm_file_sub.setVisible(self.asm_file_action.isChecked()))
         bar.triggered[ActionWithMapping].connect(lambda: self.cfg_sub.setVisible(self.cfg_action.isChecked()))
         bar.triggered[ActionWithMapping].connect(lambda: self.result_sub.setVisible(self.result_action.isChecked()))
+        bar.triggered[ActionWithMapping].connect(lambda: self.memory_block_sub.setVisible(self.block_action.isChecked()))
 
     def closeEvent(self, event):
         # TODO.

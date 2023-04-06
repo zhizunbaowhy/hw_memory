@@ -240,7 +240,7 @@ class CacheRisk:
         # f = r"D:\workspace\Gitdocuments\hw-memory\cache_analysis\new_cache\input\example-0.in"
         # f = r"D:\workspace\Gitdocuments\hw-memory\cache_analysis\new_cache\input\cache_information.in"
         # f = self.cachefile
-        config, graph, user_kwargs = read_from_file(self.cachefile)
+        config, self.graph, user_kwargs = read_from_file(self.cachefile)
 
         # print("==== Cache Config ====")
         # print("Set index length:", config.set_index_len)
@@ -263,7 +263,7 @@ class CacheRisk:
 
 
         # 最终结果--------------------------------------------------------------------------------------------------------------------------------------------
-        graph_must, graph_may, graph_pers = deepcopy(graph), deepcopy(graph), deepcopy(graph)
+        graph_must, graph_may, graph_pers = deepcopy(self.graph), deepcopy(self.graph), deepcopy(self.graph)
 
         fixpoint(config, graph_must, 'must', **user_kwargs)
         fixpoint(config, graph_may, 'may', **user_kwargs)
