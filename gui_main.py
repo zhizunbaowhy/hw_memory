@@ -498,7 +498,7 @@ def processing(c_f, asm_f, progress_cb, c_cb: Callable, asm_cb: Callable, cfg_cb
     target = g.render(filename='tcfg', directory='./output', format='svg')
     cfg_cb(os.path.abspath(target.replace("\\", "/")).replace("\\", "/"))
 
-    progress_cb(80, "Doing analysis...")
+    progress_cb(80, "Doing LR analysis and loop heat analysis...")
 
     tcfg.build_loop_hrchy()
     tcfg.add_loop_bound(r'D:\workspace\hw-memory\benchmarks\loop_bound.txt')
@@ -512,10 +512,17 @@ def processing(c_f, asm_f, progress_cb, c_cb: Callable, asm_cb: Callable, cfg_cb
     test = loop_heat(tcfg, lsproc, r'./benchmarks/final_benchmark/spec_benchmarkD.asm')
     heat_dict = {k: v for k, v in test.do_it()}
 
+    progress_cb(85, "Doing Fixpoint analysis...")
+
     f1 = r"./benchmarks/final_benchmark/spec_benchmarkD.asm"
     f2 = r"./cache_analysis/new_cache/input/cache_information.in"
     cache_test = CacheRisk(tcfg, lsproc, f1, f2)
-    cache_list = cache_test.test()
+    cache_test.preprocessing()
+    cache_test.fixpoint()
+    
+    progress_cb(90, "Almost ready...")
+    cache_list = cache_test.analysis()
+
     cache_dict = {k: list() for k in set([k for k, _, _ in cache_list])}
     for k, p, r in cache_list:
         cache_dict[k].append((p, r))
