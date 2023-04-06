@@ -240,7 +240,7 @@ class CacheRisk:
         # f = r"D:\workspace\Gitdocuments\hw-memory\cache_analysis\new_cache\input\example-0.in"
         # f = r"D:\workspace\Gitdocuments\hw-memory\cache_analysis\new_cache\input\cache_information.in"
         # f = self.cachefile
-        config, graph, user_kwargs = read_from_file(self.cachefile)
+        config, self.graph, user_kwargs = read_from_file(self.cachefile)
 
         # print("==== Cache Config ====")
         # print("Set index length:", config.set_index_len)
@@ -254,8 +254,6 @@ class CacheRisk:
         #           "access", [b.__str__() for b in node.access_blocks],
         #           "incoming", [n.ident for n in node.incoming],
         #           "outgoing", [n.ident for n in node.outgoing])
-
-        is_fixpoint = fixpoint(config, graph, 'must', **user_kwargs)  # Switch to `may` or `persistent`.
         # print(is_fixpoint, graph.it_number)
 
         #
@@ -265,7 +263,7 @@ class CacheRisk:
 
 
         # 最终结果--------------------------------------------------------------------------------------------------------------------------------------------
-        graph_must, graph_may, graph_pers = deepcopy(graph), deepcopy(graph), deepcopy(graph)
+        graph_must, graph_may, graph_pers = deepcopy(self.graph), deepcopy(self.graph), deepcopy(self.graph)
 
         fixpoint(config, graph_must, 'must', **user_kwargs)
         fixpoint(config, graph_may, 'may', **user_kwargs)
@@ -309,6 +307,7 @@ class CacheRisk:
                 # END.append(loop_name + [int(tup[0]/4096)] +["must_hit: ", len(mb_must_hit), "persistent: ", len(mb_persistent), "must_miss: ", len(mb_must_miss), "uc: ", len(mb_uc)])
                 # loop_bound默认是1的计算结果
                 # TODO if loop_list[key] == loop_bound[key], loop_bound = loop_bound[key].value  if loop_name[0] == loop_bound[]
+                # print(loop_name[0], "page", int(tup[0]/4096) ," nc: ", len(mb_uc))
                 try:
                     loop_bound = loop_bound_list.get(loop_name[0])
                     END.append([loop_name[0],
