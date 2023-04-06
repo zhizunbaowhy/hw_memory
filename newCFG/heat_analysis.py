@@ -9,6 +9,51 @@ from newCFG.isa import Instruction
 from newCFG.read_asm import AsmFileReader, StatementType
 
 
+class NewHotnessAllAnalysis:
+    def __init__(self, config: CacheConfig, tcfg: TCfg, graph_must: FixpointGraph, graph_may: FixpointGraph, graph_pers: FixpointGraph):
+        self.config = config
+        self.tcfg = tcfg
+        self.graph_must = graph_must
+        self.graph_may = graph_may
+        self.graph_pers = graph_pers
+
+        self.must_rlt_map = {n.ident: n.analysis_result() for n in self.graph_must.all_nodes}
+        self.may_rlt_map = {n.ident: n.analysis_result() for n in self.graph_may.all_nodes}
+        self.pers_rlt_map = {n.ident: n.analysis_result() for n in self.graph_pers.all_nodes}
+
+    def run(self):
+        hotness_rlt = dict()
+        for node in self.tcfg.all_nodes:
+            loop = node.inside_loop
+            loop_bound = 1 if loop is None else loop.bound
+            inst_range = tuple([r.val() for r in node.inst_range])
+            rlt = [(r, mbs, must_rlt, may_rlt, pers_rlt)
+                   for (r, mbs, must_rlt), (_, _, may_rlt), (_, _, pers_rlt) in
+                   zip(self.must_rlt_map[node.name], self.may_rlt_map[node.name], self.pers_rlt_map[node.name])]
+            idx, idx_limit = 0, len(rlt)
+            while idx < idx_limit:
+                in_one_inst = [rlt[idx]]
+                idx += 1
+                while idx < idx_limit and ((inst_range[0] > rlt[idx][0][0]) or (rlt[idx][0][0] > inst_range[1])):
+                    in_one_inst.append(rlt[idx])
+                    idx += 1
+                page_rlt = defaultdict(list)
+                for line in in_one_inst:
+                    for mb, must, may, pers in zip(*line[1:]):
+                        in_page = self.config.block2address(mb) // 4096
+                        page_rlt[in_page].append((must, may, pers))
+                for page, results in page_rlt.items():
+                    if any(rlt == (False, False, False) for rlt in results):
+                        hotness_rlt[page] = hotness_rlt.get(page, 0) + loop_bound
+                    elif any(rlt == (False, True, False) for rlt in results):
+                        hotness_rlt[page] = hotness_rlt.get(page, 0) + loop_bound
+                    else:
+                        ps_count = [rlt == (False, True, True) for rlt in results]
+                        if len(ps_count) > 0:
+                            hotness_rlt[page] = hotness_rlt.get(page, 0) + len(ps_count)
+        return hotness_rlt
+
+
 class NewLoopHotnessAnalysis:
     def __init__(self, config: CacheConfig, tcfg: TCfg, graph_must: FixpointGraph, graph_may: FixpointGraph, graph_pers: FixpointGraph):
         self.config = config
@@ -91,9 +136,14 @@ class NewLoopHotnessAnalysis:
 #     fixpoint(config, graph_may, 'may', **user_kwargs)
 #     fixpoint(config, graph_pers, 'persistent', **user_kwargs)
 #
-#     hotness_analysis = NewLoopHotnessAnalysis(config, tcfg, graph_must, graph_may, graph_pers)
-#     rlt = hotness_analysis.run_loop_level()
-#     print(rlt)
+#     # hotness_analysis = NewLoopHotnessAnalysis(config, tcfg, graph_must, graph_may, graph_pers)
+#     # rlt = hotness_analysis.run_loop_level()
+#     hotness_analysis = NewHotnessAllAnalysis(config, tcfg, graph_must, graph_may, graph_pers)
+#     rlt = hotness_analysis.run()
+#     rlt = list(sorted([(page_num, val) for page_num, val in rlt.items()], key=lambda x: x[0]))
+#     rlt_len = len(rlt)
+#     for page_num, val in rlt:
+#         print(page_num, val)
 
 
 class loop_heat:
