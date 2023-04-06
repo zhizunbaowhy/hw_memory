@@ -143,7 +143,7 @@ class ResultTableWindow(SubWindow):
         self.combo_box.setFont(font)
 
         self.table_widget = QTableWidget()
-        self.table_widget.setColumnCount(5)
+        self.table_widget.setColumnCount(4)
         self.table_widget.setEditTriggers(QTableWidget.NoEditTriggers)
         self.table_widget.setSelectionMode(QTableWidget.NoSelection)
         self.table_widget.setStyleSheet(self.__style_table)
@@ -169,8 +169,8 @@ class ResultTableWindow(SubWindow):
 
     def __set_table_data(self):
         self.table_widget.clear()
-        self.table_widget.setColumnCount(5)
-        headers = ['', 'Page Number', 'LS Result', 'Heat Result', 'Cache Result']
+        self.table_widget.setColumnCount(4)
+        headers = ['Page Number', 'LS Result', 'Hotness Result', 'Cache Result']
         self.table_widget.setHorizontalHeaderLabels(headers)
         if (t := self.combo_box.currentText()) in ('None', ''):
             self.table_widget.setRowCount(0)
@@ -178,9 +178,6 @@ class ResultTableWindow(SubWindow):
         data = self.__data_mapping[t]
         self.table_widget.setRowCount(len(data))
         for row, row_data in enumerate(data):
-            item = QTableWidgetItem("")
-            item.setBackground(QBrush(QColor(0, 190, 0)))
-            self.table_widget.setItem(row, 0, item)
             for col, cell_data in enumerate(row_data):
                 item = QTableWidgetItem(cell_data)
                 item.setTextAlignment(Qt.AlignCenter)
@@ -188,7 +185,7 @@ class ResultTableWindow(SubWindow):
                     font = QFont()
                     font.setBold(True)
                     item.setFont(font)
-                self.table_widget.setItem(row, col + 1, item)
+                self.table_widget.setItem(row, col, item)
 
 
 class TargetCodeWindow(SubWindow):
