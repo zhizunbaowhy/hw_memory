@@ -19,7 +19,11 @@ class CacheRisk:
         # tcfg = TCfg
         # self.page_size = 4096
 
-        ###以下变量用来承接结果
+        self.graph = None
+        self.config = None
+        self.graph_must = None
+        self.graph_may = None
+        self.graph_pers = None
 
     def test(self):
 
@@ -240,7 +244,7 @@ class CacheRisk:
         # f = r"D:\workspace\Gitdocuments\hw-memory\cache_analysis\new_cache\input\example-0.in"
         # f = r"D:\workspace\Gitdocuments\hw-memory\cache_analysis\new_cache\input\cache_information.in"
         # f = self.cachefile
-        config, self.graph, user_kwargs = read_from_file(self.cachefile)
+        self.config, self.graph, user_kwargs = read_from_file(self.cachefile)
 
         # print("==== Cache Config ====")
         # print("Set index length:", config.set_index_len)
@@ -263,11 +267,13 @@ class CacheRisk:
 
 
         # 最终结果--------------------------------------------------------------------------------------------------------------------------------------------
-        graph_must, graph_may, graph_pers = deepcopy(self.graph), deepcopy(self.graph), deepcopy(self.graph)
+        self.graph_must = graph_must = deepcopy(self.graph)
+        self.graph_may = graph_may = deepcopy(self.graph)
+        self.graph_pers = graph_pers = deepcopy(self.graph)
 
-        fixpoint(config, graph_must, 'must', **user_kwargs)
-        fixpoint(config, graph_may, 'may', **user_kwargs)
-        fixpoint(config, graph_pers, 'persistent', **user_kwargs)
+        fixpoint(self.config, graph_must, 'must', **user_kwargs)
+        fixpoint(self.config, graph_may, 'may', **user_kwargs)
+        fixpoint(self.config, graph_pers, 'persistent', **user_kwargs)
 
         mb_must_hit = list()
         mb_persistent = list()
@@ -287,7 +293,7 @@ class CacheRisk:
                         # print(rlt_must[0])
                         for mb, must_f, may_f, pers_f in zip(rlt_must[1], rlt_must[2], rlt_may[2], rlt_pers[2]):
                             # print(mb, must_f, may_f, pers_f)
-                            if tup[0] <= config.block2address(mb) < tup[1]:
+                            if tup[0] <= self.config.block2address(mb) < tup[1]:
                                 if must_f:
                                     mb_must_hit.append(mb)
                                 else:
