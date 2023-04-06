@@ -82,6 +82,8 @@ class loop_heat:
                     else:
                         l.loop_st_heat[key]=value
         for l in self.tcfg.loops:    #这里我要把st和sd的合起来，统计一个整体的lds结果
+            print(l.name,'ld_heat_analysis',l.loop_ld_heat,'st_heat_analysis',l.loop_st_heat)
+        for l in self.tcfg.loops:    #这里我要把st和sd的合起来，统计一个整体的lds结果
             #print(l.name)
             for key,value in l.loop_ld_heat.items():
                 a=self.find_page(key[0],key[1],value)
@@ -98,6 +100,7 @@ class loop_heat:
                     else:
                         l.page_heat_result[i[0]]+=i[1]
             self.heat_result.append([l.name]+[l.page_heat_result])
+        print(self.heat_result)
         for l in self.tcfg.loops:
             self.lobounds[l.name]=l.bound
         for l in self.heat_result:
@@ -114,5 +117,8 @@ class loop_heat:
                 temp.append([i,figure])
         return temp
     def do_it(self):
+        print(self.D)
+        # for i in self.lds_table:
+        #     print(i.node.name,"指令",i.ins.tokens,"是否是SP",i.is_sp,"指令地址",i.ins.addr.val(),"访存地址",i.final_addr,"数据宽度",i.ins.ls_data_width,"是否是加入一个数组",i.ins.is_data_group)
         self.loop_heat_analysis()
         return self.heat_result
