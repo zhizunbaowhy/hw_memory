@@ -26,7 +26,7 @@ class loadstore_Obj:
 
         for e in tcfg_edges:
             if e.is_backEdge:
-                e.loop_value = random.randint(0,10)
+                e.loop_value = 100
                 e.edge_value = 2
 
         self.lsproc = LSProc(tcfg_nodes)
