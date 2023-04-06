@@ -16,7 +16,7 @@ from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtWidgets import QAction, QApplication, QComboBox, QDesktopWidget, QFileDialog, QHBoxLayout, QLabel, QLineEdit, QMainWindow, QMdiArea, QMdiSubWindow, \
     QMessageBox, QSizePolicy, QStyleFactory, QTableWidget, QTableWidgetItem, QTextEdit, QVBoxLayout, QWidget
 
-from gui_backend import processing
+from gui_backend import WorkerThread
 
 
 class CCodeHighlighter(QSyntaxHighlighter):
@@ -337,9 +337,19 @@ class Messenger:
 
 
 class SecondaryWindow(QWidget):
+
+    @staticmethod
+    def generate_h_layout(*args):
+        layout = QHBoxLayout()
+        for item in args:
+            layout.addWidget(item)
+        return layout
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowModality(Qt.ApplicationModal)
+
+        self.th = None
 
         self.c_callback: Callable = lambda: None
         self.asm_callback: Callable = lambda: None
@@ -354,26 +364,35 @@ class SecondaryWindow(QWidget):
         self.asm_file_btn = QtWidgets.QPushButton("browse...", self)
         self.asm_file_btn.clicked.connect(self.choose_asm_file)
 
+        self.asm_D_label, self.asm_D_edit = LineEditWithLabel(self, label_name='ASM-D File').components()
+        self.asm_D_btn = QtWidgets.QPushButton("browse...", self)
+        self.asm_D_btn.clicked.connect(self.choose_asm_d_file)
+
         self.c_file_label, self.c_file_edit = LineEditWithLabel(self, label_name='C File', place_holder="Optional").components()
         self.c_file_btn = QtWidgets.QPushButton("browse...", self)
         self.c_file_btn.clicked.connect(self.choose_c_file)
+
+        self.bound_file_label, self.bound_file_edit = LineEditWithLabel(self, label_name='Loop Bound').components()
+        self.bound_file_btn = QtWidgets.QPushButton("browse...", self)
+        self.bound_file_btn.clicked.connect(self.choose_loop_bound)
+
+        self.fixpoint_file_label, self.fixpoint_file_edit = LineEditWithLabel(self, label_name='Fixpoint File').components()
+        self.fixpoint_file_btn = QtWidgets.QPushButton("browse...", self)
+        self.fixpoint_file_btn.clicked.connect(self.choose_fixpoint_input)
 
         self.generate_btn = QtWidgets.QPushButton(" Processing ", self)
         self.cancel_btn = QtWidgets.QPushButton(" Close ", self)
         self.generate_btn.clicked.connect(self.process_files)
         self.cancel_btn.clicked.connect(self.user_cancel)
 
-        layout_btn = QHBoxLayout()
-        layout_btn.addWidget(self.generate_btn)
-        layout_btn.addWidget(self.cancel_btn)
+        layout_btn = self.generate_h_layout(self.generate_btn, self.cancel_btn)
         layout_btn.addStretch()
 
-        layout_asm = QHBoxLayout()
-        layout_asm.addWidget(self.asm_file_edit)
-        layout_asm.addWidget(self.asm_file_btn)
-        layout_c = QHBoxLayout()
-        layout_c.addWidget(self.c_file_edit)
-        layout_c.addWidget(self.c_file_btn)
+        layout_asm = self.generate_h_layout(self.asm_file_edit, self.asm_file_btn)
+        layout_asm_D = self.generate_h_layout(self.asm_D_edit, self.asm_D_btn)
+        layout_c = self.generate_h_layout(self.c_file_edit, self.c_file_btn)
+        layout_bound = self.generate_h_layout(self.bound_file_edit, self.bound_file_btn)
+        layout_fixpoint = self.generate_h_layout(self.fixpoint_file_edit, self.fixpoint_file_btn)
 
         self.progress_bar = QtWidgets.QProgressBar()
         self.progress_bar.setStyleSheet("QProgressBar::chunk {background-color: skyblue;}")
@@ -382,10 +401,16 @@ class SecondaryWindow(QWidget):
         self.update_progress_bar(0)
 
         layout = QVBoxLayout()
-        layout.addWidget(self.asm_file_label)
+        layout.addWidget(self.asm_file_label)  # ASM
         layout.addLayout(layout_asm)
-        layout.addWidget(self.c_file_label)
+        layout.addWidget(self.asm_D_label)  # ASM_D
+        layout.addLayout(layout_asm_D)
+        layout.addWidget(self.c_file_label)  # C
         layout.addLayout(layout_c)
+        layout.addWidget(self.bound_file_label)  # Loop bound
+        layout.addLayout(layout_bound)
+        layout.addWidget(self.fixpoint_file_label)  # Fixpoint Input
+        layout.addLayout(layout_fixpoint)
         layout.addStretch()
         layout.addWidget(self.step_label)
         layout.addWidget(self.progress_bar)
@@ -397,37 +422,79 @@ class SecondaryWindow(QWidget):
         if ok:
             self.asm_file_edit.setText(fp)
 
+    def choose_asm_d_file(self):
+        fp, ok = UserInput.get_open_file(self, title="Choose ASM-D file", file_filter=UserInput.file_filter_gen([("ASM File", ['asm'])]))
+        if ok:
+            self.asm_D_edit.setText(fp)
+
     def choose_c_file(self):
         fp, ok = UserInput.get_open_file(self, title="Choose C file", file_filter=UserInput.file_filter_gen([("C Code", ['c', 'cpp', 'hpp', 'h'])]))
         if ok:
             self.c_file_edit.setText(fp)
 
-    def process_files(self):
+    def choose_loop_bound(self):
+        fp, ok = UserInput.get_open_file(self, title="Specify loop bound file")
+        if ok:
+            self.bound_file_edit.setText(fp)
+
+    def choose_fixpoint_input(self):
+        fp, ok = UserInput.get_open_file(self, title="Choose Fixpoint input file")
+        if ok:
+            self.fixpoint_file_edit.setText(fp)
+
+    def before_running(self):
         self.asm_file_edit.setEnabled(False)
         self.c_file_edit.setEnabled(False)
         self.asm_file_btn.setEnabled(False)
         self.c_file_btn.setEnabled(False)
         self.generate_btn.setEnabled(False)
         self.cancel_btn.setEnabled(False)
-        self.update_progress_bar(0, "Start running...")
         self.progress_bar.setStyleSheet("QProgressBar::chunk {background-color: skyblue;}")
+
+    def after_running(self):
+        self.asm_file_edit.setEnabled(True)
+        self.c_file_edit.setEnabled(True)
+        self.asm_file_btn.setEnabled(True)
+        self.c_file_btn.setEnabled(True)
+        self.generate_btn.setEnabled(True)
+        self.cancel_btn.setEnabled(True)
+
+    def success_running(self):
+        self.after_running()
+        self.close()
+
+    def error_found(self, e):
+        self.progress_bar.setStyleSheet("QProgressBar::chunk {background-color: red;}")
+        self.step_label.setText('Error.')
+        Messenger.error(self, "Error", "Error during analysis.", str(e), details_text=traceback.format_exc())
+        self.after_running()
+
+    def process_files(self):
+        self.before_running()
+
         try:
-            c_fp, asm_fp = self.c_file_edit.text(), self.asm_file_edit.text()
-            processing(c_fp, asm_fp, self.update_progress_bar, self.c_callback, self.asm_callback, self.cfg_callback, self.result_callback)
+            c_fp = self.c_file_edit.text()
+            asm_fp = self.asm_file_edit.text()
+            asm_d_fp = self.asm_D_edit.text()
+            bound_fp = self.bound_file_edit.text()
+            fixpoint_fp = self.fixpoint_file_edit.text()
+
+            self.th = WorkerThread(c_file=c_fp, asm_file=asm_fp, asm_d_file=asm_d_fp, bound_file=bound_fp, fixpoint_file=fixpoint_fp)
+
+            self.th.finished.connect(self.success_running)
+            self.th.error_found.connect(self.error_found)
+            self.th.progress_updated.connect(self.update_progress_bar)
+            self.th.result_c_file.connect(self.c_callback)
+            self.th.result_asm_file.connect(self.asm_callback)
+            self.th.result_cfg_file.connect(self.cfg_callback)
+            self.th.result_analysis.connect(self.result_callback)
+
+            self.th.start()
+
         except Exception as e:
             self.progress_bar.setStyleSheet("QProgressBar::chunk {background-color: red;}")
             self.step_label.setText('Error.')
-            Messenger.error(self, "Error", "Error when processing files.", str(e), details_text=traceback.format_exc())
-        else:
-            self.step_label.setText('Everything Ok.')
-            self.progress_bar.setStyleSheet("QProgressBar::chunk {background-color: LimeGreen;}")
-        finally:
-            self.asm_file_edit.setEnabled(True)
-            self.c_file_edit.setEnabled(True)
-            self.asm_file_btn.setEnabled(True)
-            self.c_file_btn.setEnabled(True)
-            self.generate_btn.setEnabled(True)
-            self.cancel_btn.setEnabled(True)
+            Messenger.error(self, "Error", "Unable to create working thread.", str(e), details_text=traceback.format_exc())
 
     def user_cancel(self):
         self.close()
