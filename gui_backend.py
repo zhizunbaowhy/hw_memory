@@ -11,10 +11,10 @@ from typing import Tuple
 from PyQt5.QtCore import QThread, pyqtSignal
 
 from cache_analysis.cache_risk_level import CacheRisk
-from cache_analysis.new_cache.fixponit import FixpointGraph
+from cache_analysis.new_cache.fixponit import CacheConfig, FixpointGraph
 from cache_analysis.read_segment import segmentReader
 from newCFG.cfg import CallGraph, TCfg, find_cycle, has_cycle, proc_draw_edges, proc_identify
-from newCFG.heat_analysis import loop_heat
+from newCFG.heat_analysis import NewLoopHotnessAnalysis, loop_heat
 from newCFG.isa import Instruction
 from newCFG.read_asm import AsmFileReader, StatementType
 from rwcond_out import loadstore_Obj
@@ -43,9 +43,14 @@ class WorkerThread(QThread):
         self.tcfg = None
         self.lsproc = None
         self.ls_loop_info = None
-        self.heat_dict = None
+        self.hotness_dict = None
         self.cache_dict = None
+
+        self.config = None
         self.graph = None
+        self.graph_pers = None
+        self.graph_may = None
+        self.graph_must = None
 
     def check_validation(self):
         if not os.path.isfile(self.asm_file):
@@ -100,10 +105,6 @@ class WorkerThread(QThread):
         self.lsproc = lds_obj.lsproc
         self.ls_loop_info = lds_obj.loop_info
 
-    def hotness_analysis(self):
-        test = loop_heat(self.tcfg, self.lsproc, r'./benchmarks/final_benchmark/spec_benchmarkD.asm')
-        self.heat_dict = {k: v for k, v in test.do_it()}
-
     def cache_analysis(self):
         cache_test = CacheRisk(self.tcfg, self.lsproc, self.asm_d_file, self.fixpoint_file)
         cache_list = cache_test.test()
@@ -112,7 +113,16 @@ class WorkerThread(QThread):
             self.cache_dict[k].append((p, r))
         for k in self.cache_dict.keys():
             self.cache_dict[k] = {_k: _v for _k, _v in self.cache_dict[k]}
+
+        self.config: CacheConfig = cache_test.config
         self.graph: FixpointGraph = cache_test.graph
+        self.graph_must: FixpointGraph = cache_test.graph_must
+        self.graph_may: FixpointGraph = cache_test.graph_may
+        self.graph_pers: FixpointGraph = cache_test.graph_pers
+
+    def hotness_analysis(self):
+        hotness_analysis = NewLoopHotnessAnalysis(self.config, self.tcfg, self.graph_must, self.graph_may, self.graph_pers)
+        self.hotness_dict = hotness_analysis.run_loop_level()
 
     def memory_block_analysis(self):
         self.graph: FixpointGraph
@@ -129,7 +139,7 @@ class WorkerThread(QThread):
         rlt_dict = dict()
         for lp_k in loop_keys:
             pg_rlt_list = list()
-            lp_ls_dict, lp_heat_dict, lp_cache_dict = self.ls_loop_info[lp_k], self.heat_dict[lp_k], self.cache_dict[lp_k]
+            lp_ls_dict, lp_heat_dict, lp_cache_dict = self.ls_loop_info[lp_k], self.hotness_dict[lp_k], self.cache_dict[lp_k]
             page_set = set(lp_ls_dict.keys()).union(set(lp_heat_dict.keys())).union(lp_cache_dict.keys())
             for pg in page_set:
                 ls_val = str(lp_ls_dict.get(pg, None))
@@ -149,10 +159,10 @@ class WorkerThread(QThread):
             self.frontend()
             self.progress_updated.emit(30, "Do load/store analysis...")
             self.ls_analysis()
-            self.progress_updated.emit(40, "Do hotness analysis...")
-            self.hotness_analysis()
-            self.progress_updated.emit(50, "Do cache analysis...")
+            self.progress_updated.emit(30, "Do cache analysis...")
             self.cache_analysis()
+            self.progress_updated.emit(70, "Do hotness analysis...")
+            self.hotness_analysis()
             self.progress_updated.emit(80, "Do memory block analysis...")
             self.memory_block_analysis()
             self.progress_updated.emit(90, "Almost done...")
