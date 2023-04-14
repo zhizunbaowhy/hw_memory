@@ -10,14 +10,14 @@ from typing import Tuple
 
 from PyQt5.QtCore import QThread, pyqtSignal
 
-from cache_analysis.cache_risk_level import CacheRisk
-from cache_analysis.new_cache.fixponit import CacheConfig, FixpointGraph
-from cache_analysis.read_segment import segmentReader
-from newCFG.cfg import CallGraph, TCfg, find_cycle, has_cycle, proc_draw_edges, proc_identify
-from newCFG.heat_analysis import NewLoopHotnessAnalysis, loop_heat
-from newCFG.isa import Instruction
-from newCFG.read_asm import AsmFileReader, StatementType
-from rwcond_out import loadstore_Obj
+from sample.cache_analysis.cache_risk_level import CacheRisk
+from sample.cache_analysis.new_cache.fixponit import CacheConfig, FixpointGraph
+from sample.cache_analysis.read_segment import segmentReader
+from sample.newCFG.cfg import CallGraph, TCfg, find_cycle, has_cycle, proc_draw_edges, proc_identify
+from sample.newCFG.heat_analysis import NewLoopHotnessAnalysis
+from sample.newCFG.isa import Instruction
+from sample.newCFG.read_asm import AsmFileReader, StatementType
+from sample.rwcond_out import loadstore_Obj
 
 
 class WorkerThread(QThread):
@@ -99,7 +99,7 @@ class WorkerThread(QThread):
         self.tcfg.add_loop_bound(self.bound_file)
 
     def ls_analysis(self):
-        seg_fp = r'./benchmarks/final_benchmark/spec_benchmarkD.asm'
+        seg_fp = self.asm_d_file
         segreader = segmentReader(seg_fp)
         lds_obj = loadstore_Obj(segreader, self.tcfg)
         self.lsproc = lds_obj.lsproc
