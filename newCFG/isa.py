@@ -21,7 +21,7 @@ class Re_LoadStore_Ins:
 
 class Re_LoadStore_Operand:
     #按照类型规整过的字符串
-    reg_str = r"((?:(?:x|w|s|v|r|d)\d{1,2})|wzr|xzr|sp)"
+    reg_str = r"((?:(?:x|w|s|v|r|s|d|q)\d{1,2})|wzr|xzr|sp)"
     spacedot = r"\s*\,\s*"
     space = r"\s*"
     anyword = r"(.*)"
@@ -239,6 +239,7 @@ class Instruction:
                 self.__ls_handle = True
 
                 ls_op_slip = re.match(self.__ls_split_cpat,self.tokens[4])
+                print(self.tokens)
                 temp_op = ls_op_slip.groups()
                 self.__ls_first_opperand = temp_op[0]
                 self.addrmode = temp_op[1]
