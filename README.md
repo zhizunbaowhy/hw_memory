@@ -20,3 +20,7 @@ oldCFG为原来面向过程编程的版本，目前已经弃用
 - loadstore在cfg生成之后对相应的指令进行分析
 - rw_condition用户读写分析
 - heat_analysis热度分析
+
+## 使用
+- gui可以通过图形界面直接运行分析程序
+- main.ipynb可以直接获得原始信息
