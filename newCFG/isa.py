@@ -25,9 +25,7 @@ class Re_LoadStore_Operand:
     spacedot = r"\s*\,\s*"
     space = r"\s*"
     anyword = r"(.*)"
-    immoffset_str = r"((?:[1-9]\d*)|(?:0x[0-9a-fA-F]*))"
-
-    
+    immoffset_str = r"((?:[1-9]\d*)|(?:0x[0-9a-fA-F]*))"   
     
     #adrp
     operand_adrp_access_pat = r"([0-9a-fA-F]*)\s*(<.*>)"
@@ -239,7 +237,7 @@ class Instruction:
                 self.__ls_handle = True
 
                 ls_op_slip = re.match(self.__ls_split_cpat,self.tokens[4])
-                print(self.tokens)
+                #print(self.tokens)
                 temp_op = ls_op_slip.groups()
                 self.__ls_first_opperand = temp_op[0]
                 self.addrmode = temp_op[1]

@@ -30,6 +30,7 @@ class RWUnit:
         self.__is_torrent = RWType.Unknown
 
     def add_find_cycle(self,ins,nodeValue):
+
         self.__find_cycle += nodeValue
         self.find_trace.append(ins)
     
@@ -103,6 +104,7 @@ class RWProc:
                 continue
             else:
                 for e in temp_node.incoming_edge:
+                    
                     is_loop = False
                     loop_bound = 1
                     find_queue.put(e.src)
@@ -111,7 +113,7 @@ class RWProc:
                     if e.is_backEdge:
                         is_loop = True
                         loop_start.append(e.src)
-                        loop_bound = loop_bound*e.loop_value
+                        loop_bound = loop_bound*1
         
                     while not rw_unit.is_find:
                         
@@ -146,7 +148,7 @@ class RWProc:
                             if e.is_backEdge:
                                 is_loop = True
                                 loop_start.append(e.src)
-                                loop_bound = loop_bound*e.loop_value
+                                loop_bound = loop_bound*1
                             else:
                                 pass 
             
