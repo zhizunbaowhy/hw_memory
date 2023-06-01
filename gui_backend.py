@@ -13,10 +13,10 @@ from PyQt5.QtCore import QThread, pyqtSignal
 from cache_analysis.cache_risk_level import CacheRisk
 from cache_analysis.new_cache.fixponit import CacheConfig, FixpointGraph
 from cache_analysis.read_segment import segmentReader
-from newCFG.cfg import CallGraph, TCfg, find_cycle, has_cycle, proc_draw_edges, proc_identify
-from newCFG.heat_analysis import NewLoopHotnessAnalysis, loop_heat
-from newCFG.isa import Instruction
-from newCFG.read_asm import AsmFileReader, StatementType
+from cfg.cfg import CallGraph, TCfg, find_cycle, has_cycle, proc_draw_edges, proc_identify
+from cfg.heat_analysis import NewLoopHotnessAnalysis, loop_heat
+from cfg.isa import Instruction
+from cfg.read_asm import AsmFileReader, StatementType
 from rwcond_out import loadstore_Obj
 
 

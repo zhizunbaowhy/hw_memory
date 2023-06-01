@@ -1,7 +1,7 @@
 import random
-from newCFG.loadstore import LSProc
-from newCFG.rw_condition import RWProc, RWType
-from newCFG.rw_condition_out import RWOut_Proc
+from cfg.loadstore import LSProc
+from cfg.rw_condition import RWProc, RWType
+from cfg.rw_condition_out import RWOut_Proc
 
 
 class loadstore_Obj:

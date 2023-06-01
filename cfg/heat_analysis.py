@@ -4,9 +4,9 @@ from typing import List, Tuple
 
 from cache_analysis.new_cache.fixponit import CacheConfig, FixpointGraph, fixpoint, read_from_file
 from cache_analysis.read_segment import segmentReader
-from newCFG.cfg import CallGraph, TCfg, TCfgLoopHrchy, TCfgNode, proc_draw_edges, proc_identify
-from newCFG.isa import Instruction
-from newCFG.read_asm import AsmFileReader, StatementType
+from cfg.cfg import CallGraph, TCfg, TCfgLoopHrchy, TCfgNode, proc_draw_edges, proc_identify
+from cfg.isa import Instruction
+from cfg.read_asm import AsmFileReader, StatementType
 
 
 class NewHotnessAllAnalysis:
