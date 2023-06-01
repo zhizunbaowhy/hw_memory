@@ -1,3 +1,0 @@
-class loop_addr:
-    def __init__(self,loopname):
-        pass
