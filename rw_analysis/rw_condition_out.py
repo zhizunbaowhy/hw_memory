@@ -1,5 +1,5 @@
 
-from cfg.rw_condition import RWType
+from rw_analysis.rw_condition import RWType
 class RWOut_Proc:
 
     def __init__(self,tcfgnodes,segReader,rwtable,tcfgLoops):

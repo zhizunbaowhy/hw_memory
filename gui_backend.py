@@ -17,7 +17,7 @@ from cfg.cfg import CallGraph, TCfg, find_cycle, has_cycle, proc_draw_edges, pro
 from cfg.heat_analysis import NewLoopHotnessAnalysis, loop_heat
 from cfg.isa import Instruction
 from cfg.read_asm import AsmFileReader, StatementType
-from rwcond_out import loadstore_Obj
+from rw_analysis.rwcond_out import loadstore_Obj
 
 
 class WorkerThread(QThread):
