@@ -164,9 +164,10 @@ class CacheRisk:
             for key, values in result.items():
                 f.write(f"[{key:<{max_width}}] ")
                 for i, (start, end) in enumerate(values):
-                    f.write(f"{start}-{end}")
-                    if i != len(values) - 1: # 如果不是最后一个元组，则加上逗号
-                        f.write(", ")
+                    if start < end:
+                        f.write(f"{start}-{end}")
+                        if i != len(values) - 1: # 如果不是最后一个元组，则加上逗号
+                            f.write(", ")
                 f.write(";\n")
             # TODO 考虑cache基本信息从哪里得到? e.g.,cache信息从一个config读入; 暂时直接指定
             f.write("cache_offset: 6     ;\ncache_set_index: 8  ;\ncache_assoc: 4      ;")
