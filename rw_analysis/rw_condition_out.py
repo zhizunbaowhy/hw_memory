@@ -23,13 +23,13 @@ class RWOut_Proc:
         
         tempUse = None
         for rwu in self.rw_table:
-            #print(rwu.node.name,rwu.ins.tokens,rwu.ins.addr.hex_str(),rwu.find_cycle,rwu.ins.final_addr,rwu.is_torrent)
-            if rwu.ins.addr.hex_str() == "400fb0":
-                tempUse = rwu
+            # print(rwu.node.name,rwu.ins.tokens,rwu,rwu.find_cycle,rwu.ins.final_addr,rwu.is_torrent)
+            # if rwu.ins.addr.hex_str() == "400fb0":
+            #     tempUse = rwu
             if rwu.is_torrent == RWType.Global_Tolerant:
-                #print(rwu.node.name,rwu.ins.tokens)
-                #print("here Global_Tolerant")
-                #print()
+                # print(rwu.node.name,rwu.ins.tokens)
+                # print("here Global_Tolerant")
+                # print()
                 if rwu.ins.is_data_group:
                     #print("here is_data_group")
                     self.find_range(rwu.ins.final_addr,rwu.node.name,rwu.find_cycle,RWType.Global_Tolerant)
@@ -39,8 +39,8 @@ class RWOut_Proc:
                     self.node_access_addr[rwu.node.name].append([rwu.ins.final_addr,rwu.find_cycle,RWType.Global_Tolerant])
                     #print(rwu.node.name,self.node_access_addr[rwu.node.name])
             if rwu.is_torrent == RWType.Global_Intolerant:
-                #print(rwu.node.name,rwu.ins.tokens)
-                #print("here Global_Intolerant")
+                # print(rwu.node.name,rwu.ins.tokens)
+                # print("here Global_Intolerant")
                 if rwu.ins.is_data_group:
                     #print("here is_data_group")
                     self.find_range(rwu.ins.final_addr,rwu.node.name,rwu.find_cycle,RWType.Global_Intolerant)
@@ -51,29 +51,33 @@ class RWOut_Proc:
                     #print(rwu.node.name,self.node_access_addr[rwu.node.name])
             #if rwu.is_torrent == RWType.Unknown:
                 #print(rwu.node.name,rwu.ins.tokens)
-        #print(tempUse.is_find)
-        #for i in tempUse.find_trace:
-        #    print(i.tokens)
+        
+        # print(tempUse.is_find)
+        # for i in tempUse.find_trace:
+        #     print(i.tokens)
 
-        #for k,v in self.node_access_addr.items():
-        #    print(k,v)
+        # for k,v in self.node_access_addr.items():
+        #     print(k,v)
         #print(self.node_access_addr['n21'])
         self.loopnodes = list()
         
         for ln in self.loop:
             self.loopnodes.append((ln.name,[n.name for n in ln.all_nodes])) 
         
-        #for i in self.loopnodes:
-        #    print(i)
+        # for n in self.loopnodes:
+        #      print(n)
+        #      print(n[0])
 
         self.loopinfo_tol = {}
         self.loopinfo_intol = {}
 
+        # 给每个容错和非容错数组的字典加个头
         for n in self.loopnodes:
             self.loopinfo_tol[n[0]] = {}
             self.loopinfo_intol[n[0]] = {}
         
         for k,node_addr_info in self.node_access_addr.items():
+            # print(node_addr_info)
             if len(node_addr_info) == 0:
                 pass
             else:
@@ -108,12 +112,25 @@ class RWOut_Proc:
                                 memmoryvalue = ainfo[1]
                                 self.loopinfo_intol[loopname][memmoryaddr] += memmoryvalue
 
-
+        
         #for k,v in self.loopinfo_intol.items():
-        #    print(k,v)
+        #    print(k)
+
+
+
+        
+        
+        #with open("./output/outputtxt.txt","w") as f:
+        #    for k,v in self.loopinfo_intol.items():
+        #        f.write(k)
+        #        for it in v:
+        #            f.write(it)
+        #        f.write("\n")
+
 
         #for k,v in self.loopinfo_tol.items():
         #    print(k,v)
+        #    print("here")
         
 
         self.loopinfo_tol_output = {}
@@ -175,8 +192,8 @@ class RWOut_Proc:
                     self.loopinfo[k][addr] ="非容错"
 
 
-        #for k,v in self.loopinfo.items():
-        #    print(k,v)
+        for k,v in self.loopinfo.items():
+            print(k,v)
 
         
 
